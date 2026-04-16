@@ -96,7 +96,7 @@ class KaleidoscopeMiddleware:
         sec_fetch_dest = request.headers.get('Sec-Fetch-Dest')
 
         if sec_fetch_dest:
-            return sec_fetch_dest == 'empty'
+            return sec_fetch_dest != 'document'
 
         accept = request.headers.get('Accept', '')
 

@@ -33,3 +33,73 @@
     color: inherit;
     text-decoration: none;
 }
+
+#ks-app .ks-code-block {
+    color: #d0d0e0;
+}
+
+#ks-app .token.comment,
+#ks-app .token.prolog,
+#ks-app .token.doctype,
+#ks-app .token.cdata {
+    color: #5b6078;
+    font-style: italic;
+}
+
+#ks-app .token.punctuation {
+    color: #7a7aa0;
+}
+
+#ks-app .token.string,
+#ks-app .token.triple-quoted-string,
+#ks-app .token.char,
+#ks-app .token.attr-value {
+    color: #a5b4fc;
+}
+
+#ks-app .token.number {
+    color: #67e8f9;
+}
+
+#ks-app .token.boolean,
+#ks-app .token.null,
+#ks-app .token.none,
+#ks-app .token.constant {
+    color: #c084fc;
+}
+
+#ks-app .token.keyword,
+#ks-app .token.control-flow,
+#ks-app .token.atrule {
+    color: #c084fc;
+    font-weight: 600;
+}
+
+#ks-app .token.class-name,
+#ks-app .token.builtin,
+#ks-app .token.tag {
+    color: #818cf8;
+}
+
+#ks-app .token.function {
+    color: #93c5fd;
+}
+
+#ks-app .token.operator {
+    color: #9ca3af;
+}
+
+#ks-app .token.decorator,
+#ks-app .token.important {
+    color: #a78bfa;
+}
+
+#ks-app .token.variable,
+#ks-app .token.property,
+#ks-app .token.attr-name {
+    color: #bfdbfe;
+}
+
+#ks-app .token.regex {
+    color: #c4b5fd;
+}

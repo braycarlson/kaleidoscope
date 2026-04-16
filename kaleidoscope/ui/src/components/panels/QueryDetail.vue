@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { X } from 'lucide-vue-next';
 import CollapsibleSection from '../CollapsibleSection.vue';
+import PrismCode from './PrismCode.vue';
+import { sql_formatter_get } from '../../services/sql_formatter';
 import type { StackFrame } from '../../types';
 
 interface QueryData {
@@ -14,7 +17,7 @@ interface QueryData {
     time_ms: number;
 }
 
-defineProps<{
+const props = defineProps<{
     query: QueryData;
     index: number;
     duplicate_count?: number;
@@ -24,23 +27,25 @@ const emit = defineEmits<{
     close: [];
 }>();
 
-function sql_format(sql: string): string {
-    const keywords = [
-        'FROM', 'WHERE', 'AND', 'OR', 'ORDER BY', 'GROUP BY',
-        'HAVING', 'LIMIT', 'OFFSET', 'LEFT JOIN', 'RIGHT JOIN',
-        'INNER JOIN', 'OUTER JOIN', 'JOIN', 'ON', 'SET', 'VALUES', 'UNION',
-    ];
+function try_format(sql: string): string {
+    const formatter = sql_formatter_get();
 
-    let formatted = sql;
+    if (!formatter) return sql;
 
-    for (let index = 0; index < keywords.length; index++) {
-        const keyword = keywords[index];
-        const pattern = new RegExp('\\b(' + keyword + ')\\b', 'gi');
-        formatted = formatted.replace(pattern, '\n$1');
+    try {
+        return formatter(sql);
+    } catch {
+        return sql;
     }
-
-    return formatted.trim();
 }
+
+const sql_formatted = computed(function() {
+    return try_format(props.query.sql);
+});
+
+const raw_sql_formatted = computed(function() {
+    return props.query.raw_sql ? try_format(props.query.raw_sql) : '';
+});
 </script>
 
 <template>
@@ -72,15 +77,15 @@ function sql_format(sql: string): string {
                 </div>
 
                 <CollapsibleSection title="SQL" :value_copy="query.sql">
-                    <pre class="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">{{ sql_format(query.sql) }}</pre>
+                    <PrismCode :code="sql_formatted" language="sql" block />
                 </CollapsibleSection>
 
                 <CollapsibleSection v-if="query.raw_sql" title="Raw SQL" :value_copy="query.raw_sql">
-                    <pre class="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">{{ sql_format(query.raw_sql) }}</pre>
+                    <PrismCode :code="raw_sql_formatted" language="sql" block />
                 </CollapsibleSection>
 
                 <CollapsibleSection v-if="query.params" title="Parameters" :value_copy="query.params">
-                    <pre class="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">{{ query.params }}</pre>
+                    <PrismCode :code="query.params" language="python" block />
                 </CollapsibleSection>
 
                 <CollapsibleSection v-if="query.explain" title="EXPLAIN" :value_copy="query.explain">
@@ -88,7 +93,7 @@ function sql_format(sql: string): string {
                 </CollapsibleSection>
 
                 <CollapsibleSection v-if="query.stack && query.stack.length" title="Stack Trace" :value_copy="query.stack">
-                    <div class="rounded border border-white/[0.06] overflow-hidden">
+                    <div class="rounded border border-white/[0.06] overflow-hidden bg-black/30">
                         <div
                             v-for="(frame, i) in query.stack"
                             :key="i"

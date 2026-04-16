@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { ChevronRight, Trash2 } from 'lucide-vue-next';
 import { fetch_native, json_fetch } from '../../services/api';
+import { sql_formatter_preload } from '../../services/sql_formatter';
 import { use_sort, compare_sort_values } from '../../composables/use_sort';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import CopyButton from '../CopyButton.vue';
@@ -43,6 +44,16 @@ interface QueryEnriched {
     time_ms: number;
 }
 
+interface QueryGroup {
+    sql: string;
+    occurrences: QueryEnriched[];
+    count: number;
+    time_total_ms: number;
+    time_avg_ms: number;
+    time_slowest_ms: number;
+    primary: QueryEnriched;
+}
+
 interface SimilarGroup {
     count: number;
     example: string;
@@ -67,6 +78,7 @@ const emit = defineEmits<{
 }>();
 
 const requests_expanded = reactive<Record<number, boolean>>({});
+const groups_expanded = reactive<Record<string, boolean>>({});
 const track_ajax = ref(props.data.track_ajax !== false);
 const track_page = ref(props.data.track_page !== false);
 const query_selected = ref<QueryEnriched | null>(null);
@@ -74,6 +86,12 @@ const query_selected_index = ref(0);
 const query_selected_duplicate_count = ref(0);
 const sorts_query = reactive<Record<number, QuerySortState>>({});
 const text_filter = ref('');
+
+onMounted(function() {
+    sql_formatter_preload().catch(function() {
+        // preload failed, QueryDetail will fall back to raw SQL
+    });
+});
 
 const count_duplicate = computed(function() {
     let total = 0;
@@ -86,7 +104,7 @@ const count_duplicate = computed(function() {
     return total;
 });
 
-const groups_similar = computed(function(): SimilarGroup[] {
+const groups_similar = computed(function() {
     const groups: SimilarGroup[] = [];
     const similar: Record<string, SimilarGroup> = props.data.similar || {};
 
@@ -149,6 +167,19 @@ function request_toggle(index: number) {
     requests_expanded[index] = !requests_expanded[index];
 }
 
+function group_key(request_index: number, sql: string): string {
+    return request_index + ':' + sql;
+}
+
+function group_toggle(request_index: number, sql: string) {
+    const key = group_key(request_index, sql);
+    groups_expanded[key] = !groups_expanded[key];
+}
+
+function group_is_expanded(request_index: number, sql: string): boolean {
+    return groups_expanded[group_key(request_index, sql)] === true;
+}
+
 function width_bar(time_ms: number): number {
     return Math.max(2, Math.min(100, time_ms / query_time_maximum.value * 100));
 }
@@ -184,6 +215,69 @@ function queries_get(request: RequestEntry, request_index: number): QueryEnriche
             a[column as keyof QueryEnriched],
             b[column as keyof QueryEnriched],
         );
+        return direction === 'asc' ? result : -result;
+    });
+}
+
+function groups_build(request: RequestEntry, request_index: number): QueryGroup[] {
+    const queries = queries_get(request, request_index);
+    const grouped_map: Record<string, QueryEnriched[]> = {};
+    const order: string[] = [];
+
+    for (const query of queries) {
+        if (!grouped_map[query.sql]) {
+            grouped_map[query.sql] = [];
+            order.push(query.sql);
+        }
+
+        grouped_map[query.sql].push(query);
+    }
+
+    const groups: QueryGroup[] = order.map(function(sql) {
+        const occurrences = grouped_map[sql];
+        let total = 0;
+        let slowest = 0;
+
+        for (const occurrence of occurrences) {
+            total += occurrence.time_ms;
+            if (occurrence.time_ms > slowest) slowest = occurrence.time_ms;
+        }
+
+        const primary = occurrences.reduce(function(a, b) {
+            return a.time_ms >= b.time_ms ? a : b;
+        });
+
+        return {
+            sql: sql,
+            occurrences: occurrences,
+            count: occurrences.length,
+            time_total_ms: total,
+            time_avg_ms: total / occurrences.length,
+            time_slowest_ms: slowest,
+            primary: primary,
+        };
+    });
+
+    const query_sort = sorts_query[request_index];
+    const column = query_sort ? query_sort.column : 'time_ms';
+    const direction: SortDirection = query_sort ? query_sort.direction : 'desc';
+
+    return groups.slice().sort(function(a, b) {
+        let value_a: unknown;
+        let value_b: unknown;
+
+        if (column === 'time_ms') {
+            value_a = a.time_total_ms;
+            value_b = b.time_total_ms;
+        } else if (column === 'index') {
+            value_a = a.primary.index;
+            value_b = b.primary.index;
+        } else {
+            value_a = a.primary[column as keyof QueryEnriched];
+            value_b = b.primary[column as keyof QueryEnriched];
+        }
+
+        const result = compare_sort_values(value_a, value_b);
         return direction === 'asc' ? result : -result;
     });
 }
@@ -375,38 +469,96 @@ function track_page_toggle() {
                                         <table class="w-full border-collapse min-w-[350px] sm:min-w-[500px]">
                                             <thead>
                                                 <tr>
+                                                    <th class="w-5 px-2 py-1.5 hidden sm:table-cell" />
                                                     <SortHeader :column="'index'" :sort_column="query_sort_column(request_index)" :sort_direction="query_sort_direction(request_index)" label="#" class="!w-5 hidden sm:table-cell" @sort="query_sort_toggle(request_index, 'index')" />
                                                     <th class="w-[120px] px-2 py-1.5 text-left text-[11px] font-semibold opacity-40 hidden sm:table-cell">Bar</th>
-                                                    <SortHeader :column="'time_ms'" :sort_column="query_sort_column(request_index)" :sort_direction="query_sort_direction(request_index)" label="Time" class="!w-[60px] sm:!w-[90px]" @sort="query_sort_toggle(request_index, 'time_ms')" />
-                                                    <th class="w-[60px] px-2 py-1.5 text-left text-[11px] font-semibold opacity-40">Dup</th>
+                                                    <SortHeader :column="'time_ms'" :sort_column="query_sort_column(request_index)" :sort_direction="query_sort_direction(request_index)" label="Time" class="!w-[90px] sm:!w-[110px]" @sort="query_sort_toggle(request_index, 'time_ms')" />
+                                                    <th class="w-[60px] px-2 py-1.5 text-left text-[11px] font-semibold opacity-40">Count</th>
                                                     <th class="px-2 py-1.5 text-left text-[11px] font-semibold opacity-40">SQL</th>
                                                     <th class="w-8 px-2 py-1.5" />
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr
-                                                    v-for="query in queries_get(request, request_index)"
-                                                    :key="query.index"
-                                                    class="cursor-pointer hover:bg-white/[0.03]"
-                                                    @click.stop="query_open(query, query.index)"
-                                                >
-                                                    <td class="w-5 px-2 py-1.5 text-[13px] opacity-30 border-t border-white/[0.04] align-top hidden sm:table-cell">{{ query.index + 1 }}</td>
-                                                    <td class="w-[120px] px-2 py-1.5 border-t border-white/[0.04] align-middle hidden sm:table-cell">
-                                                        <div class="h-2 rounded-full bg-white/[0.06] overflow-hidden">
-                                                            <div class="h-full rounded-full" :style="{ width: width_bar(query.time_ms) + '%', backgroundColor: color_bar(query.time_ms) }" />
-                                                        </div>
-                                                    </td>
-                                                    <td class="w-[60px] sm:w-[90px] px-2 py-1.5 border-t border-white/[0.04] align-top" :class="[query.time_ms >= 10 ? 'text-orange-500 font-semibold' : '']">{{ query.time_ms.toFixed(1) }}</td>
-                                                    <td class="w-[60px] px-2 py-1.5 border-t border-white/[0.04]">
-                                                        <span v-if="query.duplicate_count > 1" class="inline-block bg-orange-600 text-white px-1.5 py-px rounded text-[11px] font-bold">x{{ query.duplicate_count }}</span>
-                                                    </td>
-                                                    <td class="px-2 py-1.5 border-t border-white/[0.04] align-top max-w-0">
-                                                        <span class="font-mono text-xs leading-relaxed whitespace-nowrap overflow-hidden text-ellipsis block">{{ query.sql }}</span>
-                                                    </td>
-                                                    <td class="w-8 px-2 py-1.5 border-t border-white/[0.04]">
-                                                        <ChevronRight :size="14" class="inline-block text-purple-400 opacity-60 hover:opacity-100" />
-                                                    </td>
-                                                </tr>
+                                                <template v-for="group in groups_build(request, request_index)" :key="group.sql">
+                                                    <tr class="hover:bg-white/[0.03]">
+                                                        <td
+                                                            class="w-5 px-2 py-1.5 border-t border-white/[0.04] align-middle hidden sm:table-cell"
+                                                            :class="group.count > 1 ? 'cursor-pointer' : ''"
+                                                            @click.stop="group.count > 1 ? group_toggle(request_index, group.sql) : null"
+                                                        >
+                                                            <ChevronRight
+                                                                v-if="group.count > 1"
+                                                                :size="12"
+                                                                class="opacity-40 transition-transform"
+                                                                :class="group_is_expanded(request_index, group.sql) ? 'rotate-90' : ''"
+                                                            />
+                                                        </td>
+                                                        <td
+                                                            class="w-5 px-2 py-1.5 text-[13px] opacity-30 border-t border-white/[0.04] align-top hidden sm:table-cell cursor-pointer"
+                                                            @click.stop="query_open(group.primary, group.primary.index)"
+                                                        >{{ group.primary.index + 1 }}</td>
+                                                        <td
+                                                            class="w-[120px] px-2 py-1.5 border-t border-white/[0.04] align-middle hidden sm:table-cell cursor-pointer"
+                                                            @click.stop="query_open(group.primary, group.primary.index)"
+                                                        >
+                                                            <div class="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                                                                <div class="h-full rounded-full" :style="{ width: width_bar(group.time_total_ms) + '%', backgroundColor: color_bar(group.time_slowest_ms) }" />
+                                                            </div>
+                                                        </td>
+                                                        <td
+                                                            class="w-[90px] sm:w-[110px] px-2 py-1.5 border-t border-white/[0.04] align-top cursor-pointer"
+                                                            :class="[group.time_total_ms >= 10 ? 'text-orange-500 font-semibold' : '']"
+                                                            :title="group.count > 1 ? 'Total ' + group.time_total_ms.toFixed(1) + ' ms, slowest ' + group.time_slowest_ms.toFixed(1) + ' ms, avg ' + group.time_avg_ms.toFixed(1) + ' ms' : ''"
+                                                            @click.stop="query_open(group.primary, group.primary.index)"
+                                                        >
+                                                            {{ group.time_total_ms.toFixed(1) }}
+                                                            <span v-if="group.count > 1" class="opacity-40 text-[11px]">ms</span>
+                                                        </td>
+                                                        <td class="w-[60px] px-2 py-1.5 border-t border-white/[0.04]">
+                                                            <span
+                                                                v-if="group.count > 1"
+                                                                class="inline-block bg-orange-600/80 text-white px-1.5 py-px rounded text-[11px] font-bold cursor-pointer"
+                                                                @click.stop="group_toggle(request_index, group.sql)"
+                                                            >×{{ group.count }}</span>
+                                                        </td>
+                                                        <td
+                                                            class="px-2 py-1.5 border-t border-white/[0.04] align-top max-w-0 cursor-pointer"
+                                                            @click.stop="query_open(group.primary, group.primary.index)"
+                                                        >
+                                                            <span class="font-mono text-xs leading-relaxed whitespace-nowrap overflow-hidden text-ellipsis block">{{ group.sql }}</span>
+                                                        </td>
+                                                        <td
+                                                            class="w-8 px-2 py-1.5 border-t border-white/[0.04] cursor-pointer"
+                                                            @click.stop="query_open(group.primary, group.primary.index)"
+                                                        >
+                                                            <ChevronRight :size="14" class="inline-block text-purple-400 opacity-60 hover:opacity-100" />
+                                                        </td>
+                                                    </tr>
+                                                    <template v-if="group.count > 1 && group_is_expanded(request_index, group.sql)">
+                                                        <tr
+                                                            v-for="occurrence in group.occurrences"
+                                                            :key="occurrence.index"
+                                                            class="cursor-pointer hover:bg-white/[0.03] bg-white/[0.015]"
+                                                            @click.stop="query_open(occurrence, occurrence.index)"
+                                                        >
+                                                            <td class="w-5 px-2 py-1 border-t border-white/[0.03] hidden sm:table-cell" />
+                                                            <td class="w-5 px-2 py-1 text-[12px] opacity-30 border-t border-white/[0.03] align-top hidden sm:table-cell">{{ occurrence.index + 1 }}</td>
+                                                            <td class="w-[120px] px-2 py-1 border-t border-white/[0.03] align-middle hidden sm:table-cell">
+                                                                <div class="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                                                    <div class="h-full rounded-full" :style="{ width: width_bar(occurrence.time_ms) + '%', backgroundColor: color_bar(occurrence.time_ms) }" />
+                                                                </div>
+                                                            </td>
+                                                            <td class="w-[90px] sm:w-[110px] px-2 py-1 border-t border-white/[0.03] align-top text-[12px]" :class="[occurrence.time_ms >= 10 ? 'text-orange-500' : 'opacity-70']">{{ occurrence.time_ms.toFixed(1) }}</td>
+                                                            <td class="w-[60px] px-2 py-1 border-t border-white/[0.03]" />
+                                                            <td class="px-2 py-1 border-t border-white/[0.03] align-top max-w-0 opacity-60">
+                                                                <span class="font-mono text-[11px] leading-relaxed whitespace-nowrap overflow-hidden text-ellipsis block">{{ occurrence.sql }}</span>
+                                                            </td>
+                                                            <td class="w-8 px-2 py-1 border-t border-white/[0.03]">
+                                                                <ChevronRight :size="12" class="inline-block text-purple-400 opacity-40 hover:opacity-100" />
+                                                            </td>
+                                                        </tr>
+                                                    </template>
+                                                </template>
                                             </tbody>
                                         </table>
                                     </div>

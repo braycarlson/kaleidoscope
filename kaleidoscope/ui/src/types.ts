@@ -8,6 +8,8 @@ export type CopyFormat = 'table' | 'json' | 'text';
 
 export type CopyValue = string | object;
 
+export type KaleidoscopeSide = 'left' | 'right';
+
 export interface PanelMeta {
     id: string;
     isolate: boolean;

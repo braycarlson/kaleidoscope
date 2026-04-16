@@ -20,9 +20,11 @@ def _is_middleware_class(middleware_class: type, middleware_path: str) -> bool:
 
 @register
 def check_middleware(
-    _app_configs: object,
+    app_configs: object,
     **_kwargs: object,
 ) -> list[Warning]:
+    _ = app_configs
+
     errors = []
     gzip_index = None
     kaleidoscope_indexes = []
@@ -77,9 +79,11 @@ def check_middleware(
 
 @register
 def check_internal_ips(
-    _app_configs: object,
+    app_configs: object,
     **_kwargs: object,
 ) -> list[Warning]:
+    _ = app_configs
+
     errors = []
 
     callback = getattr(settings, 'KALEIDOSCOPE_SHOW_CALLBACK', None)
@@ -99,9 +103,11 @@ def check_internal_ips(
 
 @register
 def check_panels(
-    _app_configs: object,
+    app_configs: object,
     **_kwargs: object,
 ) -> list[Warning]:
+    _ = app_configs
+
     from kaleidoscope.panel import Panel  # noqa: PLC0415
     from kaleidoscope.registry import DEFAULT_PANELS  # noqa: PLC0415
 

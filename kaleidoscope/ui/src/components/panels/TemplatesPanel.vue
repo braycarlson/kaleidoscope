@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, h } from 'vue';
+import { ref, computed, h, watch } from 'vue';
 import { Search } from 'lucide-vue-next';
 import CollapsibleSection from '../CollapsibleSection.vue';
+import ContextValueContainer from './ContextValueContainer.vue';
 import CopyButton from '../CopyButton.vue';
 import DataTable from '../DataTable.vue';
 import type { ColumnDef } from '@tanstack/vue-table';
@@ -14,7 +15,7 @@ interface TemplateEntry {
 }
 
 interface TemplateRaw {
-    context_keys: string[];
+    context_keys?: string[];
     duration_ms: number;
     name: string;
 }
@@ -30,10 +31,23 @@ const props = defineProps<{
 }>();
 
 const text_filter = ref('');
+const active_key = ref<Record<number, string | null>>({});
+
+watch(function() {
+    return (props.data.templates || []).map(function(template) { return template.name; }).join('|');
+}, function(signature_new, signature_old) {
+    if (signature_new !== signature_old) {
+        active_key.value = {};
+    }
+});
 
 const templates_enriched = computed(function(): TemplateEntry[] {
     return (props.data.templates || []).map(function(template, index) {
-        return { ...template, _index: index };
+        return {
+            ...template,
+            context_keys: template.context_keys || [],
+            _index: index,
+        };
     });
 });
 
@@ -46,6 +60,14 @@ const templates_filtered = computed(function(): TemplateEntry[] {
         return template.name.toLowerCase().includes(search);
     });
 });
+
+function key_toggle(template_index: number, key: string) {
+    if (active_key.value[template_index] === key) {
+        active_key.value = { ...active_key.value, [template_index]: null };
+    } else {
+        active_key.value = { ...active_key.value, [template_index]: key };
+    }
+}
 
 const columns: ColumnDef<TemplateEntry, unknown>[] = [
     {
@@ -85,7 +107,7 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
         enableSorting: false,
         meta: { headerClass: '!w-20 hidden sm:table-cell', cellClass: 'w-20 hidden sm:table-cell' },
         cell: function(info) {
-            const keys = info.getValue() as string[];
+            const keys = (info.getValue() as string[] | undefined) || [];
             return h('span', { class: keys.length > 0 ? '' : 'opacity-30' }, String(keys.length));
         },
     },
@@ -131,18 +153,24 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
                 width_minimum="400px"
             >
                 <template #expanded="{ row }">
-                    <div v-if="row.context_keys.length" class="pt-2">
+                    <div v-if="(row.context_keys || []).length" class="pt-2">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-[11px] opacity-30">Context Keys</span>
-                            <CopyButton :value="row.context_keys.join(', ')" :size="11" />
+                            <span class="text-[11px] opacity-30">Context</span>
+                            <CopyButton :value="row.context_keys || []" :size="11" />
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <span
-                                v-for="key in row.context_keys"
+                            <button
+                                v-for="key in (row.context_keys || [])"
                                 :key="key"
-                                class="inline-block px-2 py-0.5 bg-white/[0.05] rounded text-[12px] font-mono text-gray-300"
-                            >{{ key }}</span>
+                                class="inline-block px-2 py-0.5 rounded text-[12px] font-mono cursor-pointer transition-colors"
+                                :class="active_key[row._index] === key ? 'bg-purple-600/30 text-white' : 'bg-white/[0.05] hover:bg-white/[0.1] text-gray-300'"
+                                @click="key_toggle(row._index, key)"
+                            >{{ key }}</button>
                         </div>
+                        <ContextValueContainer
+                            :template_index="row._index"
+                            :active_key="active_key[row._index] || null"
+                        />
                     </div>
                     <div v-else class="pt-2 text-[11px] opacity-30">No context variables</div>
                 </template>

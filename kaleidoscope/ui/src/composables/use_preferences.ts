@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue';
+import { json_fetch } from '../services/api';
 import type { KaleidoscopeSide, KaleidoscopeState, PanelRegistry } from '../types';
 
 interface Preferences {
@@ -72,13 +73,9 @@ export function use_preferences(): UsePreferencesReturn {
                     }
 
                     if (preferences.disabled[id]) {
-                        import('../services/api').then(function(api) {
-                            api.json_fetch('/__kaleidoscope__/panels/' + id + '/disable/');
-                        });
+                        json_fetch('/__kaleidoscope__/panels/' + id + '/disable/');
                     } else {
-                        import('../services/api').then(function(api) {
-                            api.json_fetch('/__kaleidoscope__/panels/' + id + '/enable/');
-                        });
+                        json_fetch('/__kaleidoscope__/panels/' + id + '/enable/');
                     }
                 }
             }

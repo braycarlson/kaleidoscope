@@ -35,8 +35,10 @@ watch(function() { return props.sorting_default; }, function(value) {
     }
 });
 
-watch(function() { return props.data; }, function() {
-    expanded.value = new Set();
+watch(function() { return props.data.length; }, function(length_new, length_old) {
+    if (length_new !== length_old) {
+        expanded.value = new Set();
+    }
 });
 
 const table = useVueTable({

@@ -107,7 +107,7 @@ function on_drag_end() {
             style="border-bottom: 1px solid rgba(255, 255, 255, 0.15)"
             @click="emit('close')"
         >
-            <span class="font-semibold text-sm text-gray-400 group-hover:text-gray-300 transition-colors">Kaleidoscope</span>
+            <span class="text-[15px] tracking-[0.15em] text-purple-300">Kaleidoscope</span>
             <X :size="16" class="text-gray-400 group-hover:text-white transition-colors" />
         </div>
 

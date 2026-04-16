@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
+import PanelHeader from '../PanelHeader.vue';
 
 interface LineEntry {
     hits: number;
@@ -60,6 +61,18 @@ function class_time(percent: number): string {
     if (percent >= 10) return 'text-yellow-400';
     return '';
 }
+
+const stats = computed(function() {
+    const items: { label: string; value: string | number }[] = [
+        { label: 'Duration', value: (props.data.duration_ms || 0) + ' ms' },
+    ];
+
+    if (props.data.function_count) {
+        items.push({ label: 'Functions', value: props.data.function_count });
+    }
+
+    return items;
+});
 </script>
 
 <template>
@@ -67,16 +80,7 @@ function class_time(percent: number): string {
         <div v-if="data.error" class="py-10 text-center text-red-400 italic">{{ data.error }}</div>
 
         <template v-else>
-            <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-                <div class="flex items-center gap-2">
-                    <span class="opacity-40 text-[13px]">Duration</span>
-                    <span class="font-semibold text-[15px]">{{ data.duration_ms || 0 }} ms</span>
-                </div>
-                <div v-if="data.function_count" class="flex items-center gap-2">
-                    <span class="opacity-40 text-[13px]">Functions</span>
-                    <span class="font-semibold text-[15px]">{{ data.function_count }}</span>
-                </div>
-            </div>
+            <PanelHeader :stats="stats" />
 
             <template v-if="data.has_data && functions.length">
                 <CollapsibleSection

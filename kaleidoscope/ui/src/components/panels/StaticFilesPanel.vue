@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 
 interface StaticFile {
     finder: string;
@@ -20,10 +21,22 @@ const props = defineProps<{
     data: StaticFilesPanelData;
 }>();
 
-const text_filter = ref('');
+const text_filter_used = ref('');
+const text_filter_all = ref('');
+
+const files_used_filtered = computed(function(): string[] {
+    const search = text_filter_used.value.toLowerCase();
+    const files = props.data.used_files || [];
+
+    if (!search) return files;
+
+    return files.filter(function(file) {
+        return file.toLowerCase().includes(search);
+    });
+});
 
 const files_all_filtered = computed(function(): StaticFile[] {
-    const search = text_filter.value.toLowerCase();
+    const search = text_filter_all.value.toLowerCase();
 
     if (!search) return props.data.all_files || [];
 
@@ -39,26 +52,26 @@ const files_used_copy = computed(function(): string {
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Used</span>
-                <span class="font-semibold text-[15px]">{{ data.used_count }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Total Available</span>
-                <span class="font-semibold text-[15px]">{{ data.all_count }}</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Used', value: data.used_count },
+                { label: 'Total', value: data.all_count },
+            ]"
+        />
 
         <CollapsibleSection
             title="Static Files"
             :count="data.used_count"
             :value_copy="files_used_copy"
         >
+            <div v-if="data.used_files && data.used_files.length" class="mb-4 pl-2">
+                <FilterInput v-model="text_filter_used" />
+            </div>
+
             <div class="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-                <table v-if="data.used_files && data.used_files.length" class="w-full border-collapse min-w-[250px]">
+                <table v-if="files_used_filtered.length" class="w-full border-collapse min-w-[250px]">
                     <tbody>
-                        <tr v-for="file in data.used_files" :key="file" class="hover:bg-white/[0.02]">
+                        <tr v-for="file in files_used_filtered" :key="file" class="hover:bg-white/[0.02]">
                             <td class="px-2 py-1.5 text-[13px] font-mono border-t border-white/[0.04] break-all">{{ file }}</td>
                         </tr>
                     </tbody>
@@ -73,7 +86,7 @@ const files_used_copy = computed(function(): string {
             :value_copy="data.all_files"
         >
             <div class="mb-4 pl-2">
-                <FilterInput v-model="text_filter" />
+                <FilterInput v-model="text_filter_all" />
             </div>
 
             <div class="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">

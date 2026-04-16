@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import DataTable from '../DataTable.vue';
+import PanelHeader from '../PanelHeader.vue';
 import type { ColumnDef } from '@tanstack/vue-table';
 
 interface TimerRow {
@@ -53,16 +54,12 @@ const columns: ColumnDef<TimerRow, unknown>[] = [
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Total</span>
-                <span class="font-semibold text-[15px]">{{ data.total_ms }} ms</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Status</span>
-                <span class="font-semibold text-[15px]" :class="data.status_code >= 400 ? 'text-red-500' : 'text-green-500'">{{ data.status_code }}</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Total', value: data.total_ms + ' ms' },
+                { label: 'Status', value: data.status_code },
+            ]"
+        />
 
         <CollapsibleSection
             v-if="rows.length"

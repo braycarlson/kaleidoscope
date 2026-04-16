@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CollapsibleSection from '../CollapsibleSection.vue';
+import PanelHeader from '../PanelHeader.vue';
 import { value_format } from '../../services/format';
 
 interface ViewData {
@@ -32,20 +33,13 @@ function count_entries(object: Record<string, string> | undefined): number {
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Method</span>
-                <span class="font-semibold text-[15px]">{{ data.method }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Status</span>
-                <span class="font-semibold text-[15px]" :class="data.status_code >= 400 ? 'text-red-500' : 'text-green-500'">{{ data.status_code }}</span>
-            </div>
-            <div class="flex items-center gap-2 min-w-0">
-                <span class="opacity-40 text-[13px] shrink-0">Path</span>
-                <span class="font-semibold text-[15px] break-all">{{ data.path }}</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Method', value: data.method },
+                { label: 'Status', value: data.status_code },
+                { label: 'Path', value: data.path },
+            ]"
+        />
 
         <CollapsibleSection
             v-if="data.view"

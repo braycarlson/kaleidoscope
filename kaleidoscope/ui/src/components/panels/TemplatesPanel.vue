@@ -5,6 +5,7 @@ import CollapsibleSection from '../CollapsibleSection.vue';
 import ContextValueContainer from './ContextValueContainer.vue';
 import CopyButton from '../CopyButton.vue';
 import DataTable from '../DataTable.vue';
+import PanelHeader from '../PanelHeader.vue';
 import type { ColumnDef } from '@tanstack/vue-table';
 
 interface TemplateEntry {
@@ -71,12 +72,6 @@ function key_toggle(template_index: number, key: string) {
 
 const columns: ColumnDef<TemplateEntry, unknown>[] = [
     {
-        accessorKey: '_index',
-        header: '#',
-        meta: { headerClass: '!w-10 hidden sm:table-cell', cellClass: 'w-10 opacity-30 hidden sm:table-cell' },
-        cell: function(info) { return (info.getValue() as number) + 1; },
-    },
-    {
         accessorKey: 'name',
         header: 'Template',
         cell: function(info) {
@@ -94,7 +89,7 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
     {
         accessorKey: 'duration_ms',
         header: 'Duration',
-        meta: { headerClass: '!w-24', cellClass: 'w-24' },
+        meta: { headerClass: '!w-40', cellClass: 'w-40' },
         cell: function(info) {
             const value = info.getValue() as number;
             const class_name = value >= 10 ? 'text-orange-500 font-semibold' : value >= 5 ? 'text-yellow-500' : '';
@@ -102,13 +97,15 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
         },
     },
     {
-        accessorKey: 'context_keys',
-        header: 'Context',
-        enableSorting: false,
-        meta: { headerClass: '!w-20 hidden sm:table-cell', cellClass: 'w-20 hidden sm:table-cell' },
+        id: 'context_keys',
+        accessorFn: function(row) {
+            return (row.context_keys || []).length;
+        },
+        header: 'Context Variables',
+        meta: { headerClass: '!w-48 hidden sm:table-cell', cellClass: 'w-48 hidden sm:table-cell' },
         cell: function(info) {
-            const keys = (info.getValue() as string[] | undefined) || [];
-            return h('span', { class: keys.length > 0 ? '' : 'opacity-30' }, String(keys.length));
+            const count = info.getValue() as number;
+            return h('span', { class: count > 0 ? '' : 'opacity-30' }, String(count));
         },
     },
 ];
@@ -116,16 +113,12 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Templates</span>
-                <span class="font-semibold text-[15px]">{{ data.count }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Time</span>
-                <span class="font-semibold text-[15px]">{{ data.total_time }} ms</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Templates', value: data.count },
+                { label: 'Time', value: data.total_time + ' ms' },
+            ]"
+        />
 
         <CollapsibleSection
             v-if="templates_enriched.length"
@@ -139,7 +132,7 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
                     <input
                         v-model="text_filter"
                         type="text"
-                        placeholder="Filter templates..."
+                        placeholder="Filter..."
                         class="pl-8 pr-3 py-1 bg-white/[0.05] border border-white/10 rounded text-[13px] text-[#d0d0e0] outline-none focus:border-purple-500/50 w-full sm:w-64"
                     >
                 </div>
@@ -163,9 +156,11 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
                                 v-for="key in (row.context_keys || [])"
                                 :key="key"
                                 class="inline-block px-2 py-0.5 rounded text-[12px] font-mono cursor-pointer transition-colors"
-                                :class="active_key[row._index] === key ? 'bg-purple-600/30 text-white' : 'bg-white/[0.05] hover:bg-white/[0.1] text-gray-300'"
+                                :class="active_key[row._index] === key ? 'bg-purple-400/20 text-purple-200' : 'bg-white/[0.05] hover:bg-white/[0.1] text-gray-300'"
                                 @click="key_toggle(row._index, key)"
-                            >{{ key }}</button>
+                            >
+                                {{ key }}
+                            </button>
                         </div>
                         <ContextValueContainer
                             :template_index="row._index"

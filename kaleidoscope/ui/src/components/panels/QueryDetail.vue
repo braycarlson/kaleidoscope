@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { X } from 'lucide-vue-next';
 import CollapsibleSection from '../CollapsibleSection.vue';
+import PanelHeader from '../PanelHeader.vue';
 import PrismCode from './PrismCode.vue';
 import { sql_formatter_get } from '../../services/sql_formatter';
 import type { StackFrame } from '../../types';
@@ -46,6 +47,22 @@ const sql_formatted = computed(function() {
 const raw_sql_formatted = computed(function() {
     return props.query.raw_sql ? try_format(props.query.raw_sql) : '';
 });
+
+const stats_header = computed(function() {
+    const items: { label: string; value: string | number }[] = [
+        { label: 'Duration', value: props.query.time_ms.toFixed(2) + ' ms' },
+    ];
+
+    if (props.query.many) {
+        items.push({ label: 'Type', value: 'executemany' });
+    }
+
+    if ((props.duplicate_count || 0) > 1) {
+        items.push({ label: 'Duplicates', value: props.duplicate_count || 0 });
+    }
+
+    return items;
+});
 </script>
 
 <template>
@@ -61,20 +78,7 @@ const raw_sql_formatted = computed(function() {
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto p-3 sm:p-5">
-                <div class="flex flex-wrap items-center gap-3 sm:gap-5 pb-4 mb-5 border-b border-white/[0.08]">
-                    <div class="flex items-center gap-2">
-                        <span class="opacity-40 text-[13px]">Duration</span>
-                        <span class="font-semibold text-[15px]" :class="query.time_ms >= 10 ? 'text-orange-500' : ''">{{ query.time_ms.toFixed(2) }} ms</span>
-                    </div>
-                    <div v-if="query.many" class="flex items-center gap-2">
-                        <span class="opacity-40 text-[13px]">Type</span>
-                        <span class="font-semibold text-[15px] text-purple-400">executemany</span>
-                    </div>
-                    <div v-if="(duplicate_count || 0) > 1" class="flex items-center gap-2">
-                        <span class="opacity-40 text-[13px]">Duplicates</span>
-                        <span class="font-semibold text-[15px] text-orange-500">{{ duplicate_count }}</span>
-                    </div>
-                </div>
+                <PanelHeader :stats="stats_header" />
 
                 <CollapsibleSection title="SQL" :value_copy="query.sql">
                     <PrismCode :code="sql_formatted" language="sql" block />

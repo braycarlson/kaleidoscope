@@ -3,6 +3,7 @@ import { ref, computed, h } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import DataTable from '../DataTable.vue';
 import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 import type { ColumnDef } from '@tanstack/vue-table';
 
 interface PackageEntry {
@@ -60,20 +61,13 @@ const columns: ColumnDef<PackageEntry, unknown>[] = [
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Python</span>
-                <span class="font-semibold text-[15px]">{{ data.python }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Django</span>
-                <span class="font-semibold text-[15px]">{{ data.django }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Packages</span>
-                <span class="font-semibold text-[15px]">{{ data.count }}</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Python', value: data.python },
+                { label: 'Django', value: data.django },
+                { label: 'Packages', value: data.count },
+            ]"
+        />
 
         <CollapsibleSection
             title="Installed Packages"

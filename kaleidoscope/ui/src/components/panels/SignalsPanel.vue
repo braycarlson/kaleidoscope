@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, h } from 'vue';
+import { ref, computed, h } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import CopyButton from '../CopyButton.vue';
 import DataTable from '../DataTable.vue';
+import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 import type { ColumnDef } from '@tanstack/vue-table';
 
 interface SignalEntry {
@@ -22,8 +24,21 @@ const props = defineProps<{
     data: SignalsPanelData;
 }>();
 
+const text_filter = ref('');
+
 const signals = computed(function(): SignalEntry[] {
     return props.data.signals || [];
+});
+
+const signals_filtered = computed(function(): SignalEntry[] {
+    const search = text_filter.value.toLowerCase();
+
+    if (!search) return signals.value;
+
+    return signals.value.filter(function(signal) {
+        return signal.name.toLowerCase().includes(search)
+            || signal.module.toLowerCase().includes(search);
+    });
 });
 
 const columns: ColumnDef<SignalEntry, unknown>[] = [
@@ -62,25 +77,25 @@ const columns: ColumnDef<SignalEntry, unknown>[] = [
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Signals</span>
-                <span class="font-semibold text-[15px]">{{ data.count }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Receivers</span>
-                <span class="font-semibold text-[15px]">{{ data.total_receivers }}</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Signals', value: data.count },
+                { label: 'Receivers', value: data.total_receivers },
+            ]"
+        />
 
         <CollapsibleSection
             title="Signals"
             :count="data.count"
             :value_copy="data.signals"
         >
+            <div class="mb-4 pl-2">
+                <FilterInput v-model="text_filter" placeholder="Filter..." />
+            </div>
+
             <DataTable
                 :columns="columns"
-                :data="signals"
+                :data="signals_filtered"
                 expandable
                 width_minimum="300px"
             >

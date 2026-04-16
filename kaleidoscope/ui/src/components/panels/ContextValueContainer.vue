@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-    <div v-if="active_key" class="mt-3 rounded border border-white/[0.06] h-80 overflow-auto">
+    <div v-if="active_key" class="mt-3 rounded border border-white/[0.06] bg-black/30 h-80 overflow-auto">
         <Transition
             enter-active-class="transition-opacity duration-150 ease-out"
             leave-active-class="transition-opacity duration-100 ease-in"

@@ -1,6 +1,6 @@
 export default {
     content: ['./src/**/*.{vue,js}'],
-    important: '#ks-app',
+    important: true,
     corePlugins: {
         preflight: true,
     },

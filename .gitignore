@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+sdist/
+wheels/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+
+# Django
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Vue / TypeScript / Bun
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing / Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+# Linting / Type checking
+.ruff_cache/
+.mypy_cache/
+.ty/
+
+# Misc
+*.pdb
+.cache/

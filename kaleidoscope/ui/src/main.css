@@ -1,0 +1,35 @@
+@tailwind components;
+@tailwind utilities;
+
+#ks-app *,
+#ks-app *::before,
+#ks-app *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+    --tw-rotate: 0;
+    --tw-skew-x: 0;
+    --tw-skew-y: 0;
+    --tw-scale-x: 1;
+    --tw-scale-y: 1;
+}
+
+#ks-app button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+#ks-app table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+#ks-app a {
+    color: inherit;
+    text-decoration: none;
+}

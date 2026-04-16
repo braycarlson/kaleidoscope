@@ -1,0 +1,28 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Build frontend
+        working-directory: kaleidoscope/ui
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+
+      - name: Build and publish
+        run: |
+          uv build
+          uv publish --trusted-publishing always

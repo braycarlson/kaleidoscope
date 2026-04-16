@@ -1,0 +1,28 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=68.0"]
+
+[project]
+name = "django-kaleidoscope"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=4.2",
+    "line-profiler",
+    "pympler>=1.0",
+    "pyinstrument>=4.0",
+    "sqlparse>=0.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "line-profiler",
+    "ruff",
+    "ty",
+]
+
+[tool.setuptools.packages.find]
+include = ["kaleidoscope*"]
+
+[tool.setuptools.package-data]
+kaleidoscope = ["static/kaleidoscope/**/*", "templates/*"]

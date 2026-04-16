@@ -1,16 +1,18 @@
 import { ref, type Ref } from 'vue';
-import type { KaleidoscopeState, PanelRegistry } from '../types';
+import type { KaleidoscopeSide, KaleidoscopeState, PanelRegistry } from '../types';
 
 interface Preferences {
     active_panel: string | null;
     disabled: Record<string, boolean>;
     order: string[];
+    side: KaleidoscopeSide;
     state: KaleidoscopeState;
 }
 
 interface UsePreferencesReturn {
     panel_order: Ref<string[]>;
     panels_disabled: Ref<Record<string, boolean>>;
+    side: Ref<KaleidoscopeSide>;
     preferences_save: (state: KaleidoscopeState, panel_active: string | null) => void;
     preferences_load: (
         panel_registry: PanelRegistry,
@@ -21,6 +23,7 @@ interface UsePreferencesReturn {
 export function use_preferences(): UsePreferencesReturn {
     const panel_order = ref<string[]>([]);
     const panels_disabled = ref<Record<string, boolean>>({});
+    const side = ref<KaleidoscopeSide>('right');
 
     function preferences_save(state: KaleidoscopeState, panel_active: string | null) {
         try {
@@ -28,6 +31,7 @@ export function use_preferences(): UsePreferencesReturn {
                 active_panel: panel_active,
                 disabled: panels_disabled.value,
                 order: panel_order.value,
+                side: side.value,
                 state: state,
             }));
         } catch {
@@ -46,6 +50,7 @@ export function use_preferences(): UsePreferencesReturn {
                 const preferences: Preferences = JSON.parse(raw);
                 panel_order.value = preferences.order || [];
                 panels_disabled.value = preferences.disabled || {};
+                side.value = preferences.side || 'right';
 
                 if (preferences.state && preferences.state !== 'collapsed') {
                     let panel_id: string | null = null;
@@ -80,8 +85,9 @@ export function use_preferences(): UsePreferencesReturn {
         } catch {
             panel_order.value = [];
             panels_disabled.value = {};
+            side.value = 'right';
         }
     }
 
-    return { panel_order, panels_disabled, preferences_save, preferences_load };
+    return { panel_order, panels_disabled, side, preferences_save, preferences_load };
 }

@@ -1,24 +1,27 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Info, X, GripVertical, PanelRightClose } from 'lucide-vue-next';
-import type { PanelMeta } from '../types';
+import { Info, X, GripVertical, PanelLeft, PanelLeftClose, PanelRight, PanelRightClose } from 'lucide-vue-next';
+import type { KaleidoscopeSide, PanelMeta } from '../types';
 
 const props = withDefaults(defineProps<{
     panels: PanelMeta[];
     panel_active?: string | null;
     panel_order?: string[];
     panels_disabled?: Record<string, boolean>;
+    side?: KaleidoscopeSide;
     is_mobile?: boolean;
 }>(), {
     panel_active: null,
     panel_order: () => [],
     panels_disabled: () => ({}),
+    side: 'right',
     is_mobile: false,
 });
 
 const emit = defineEmits<{
     select: [panel_id: string];
     close: [];
+    swap: [];
     toggle: [panel_id: string];
     reorder: [order: string[]];
 }>();
@@ -93,8 +96,11 @@ function on_drag_end() {
 
 <template>
     <div
-        class="flex flex-col bg-black/95 backdrop-blur-md border-l border-white/10 shrink-0"
-        :class="is_mobile ? 'w-full' : 'w-64 min-w-[256px]'"
+        class="flex flex-col bg-black/95 backdrop-blur-md shrink-0"
+        :class="[
+            is_mobile ? 'w-full' : 'w-64 min-w-[256px]',
+            side === 'right' ? 'border-l border-white/10' : 'border-r border-white/10',
+        ]"
     >
         <div
             class="flex items-center justify-between px-3.5 py-3 shrink-0 cursor-pointer transition-colors hover:bg-white/[0.03] group"
@@ -122,11 +128,11 @@ function on_drag_end() {
                 v-for="(panel, index) in panels_ordered"
                 :key="panel.id"
                 draggable="true"
-                class="flex items-center gap-1 pr-3 transition-colors border-l-[3px]"
+                class="flex items-center gap-1 pr-3 transition-colors"
                 :class="[
                     panel_active === panel.id
-                        ? 'border-purple-700 bg-white/[0.06]'
-                        : 'border-transparent hover:bg-white/[0.03]',
+                        ? (side === 'right' ? 'border-l-[3px] border-purple-700' : 'border-r-[3px] border-purple-700') + ' bg-white/[0.06]'
+                        : (side === 'right' ? 'border-l-[3px]' : 'border-r-[3px]') + ' border-transparent hover:bg-white/[0.03]',
                     index_drag_over === index && index_drag !== index
                         ? 'border-t border-t-purple-500'
                         : '',
@@ -178,12 +184,26 @@ function on_drag_end() {
         </div>
 
         <div
-            class="flex items-center justify-center gap-2 px-3.5 py-3 shrink-0 cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+            class="flex items-center shrink-0"
             style="border-top: 1px solid rgba(255, 255, 255, 0.15)"
-            @click="emit('close')"
         >
-            <PanelRightClose :size="14" />
-            <span class="text-[12px]">Collapse</span>
+            <div
+                class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+                @click="emit('swap')"
+            >
+                <PanelLeft v-if="side === 'right'" :size="14" />
+                <PanelRight v-else :size="14" />
+                <span class="text-[12px]">Move</span>
+            </div>
+            <div class="w-px h-5 bg-white/[0.15]" />
+            <div
+                class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+                @click="emit('close')"
+            >
+                <PanelLeftClose v-if="side === 'left'" :size="14" />
+                <PanelRightClose v-else :size="14" />
+                <span class="text-[12px]">Collapse</span>
+            </div>
         </div>
     </div>
 </template>

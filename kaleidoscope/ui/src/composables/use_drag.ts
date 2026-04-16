@@ -68,6 +68,7 @@ export function use_drag(on_click: () => void): UseDragReturn {
         document.addEventListener('mousemove', on_mousemove);
         document.addEventListener('mouseup', on_mouseup);
         event.preventDefault();
+        event.stopPropagation();
     }
 
     function on_touchstart(event: TouchEvent) {
@@ -75,6 +76,7 @@ export function use_drag(on_click: () => void): UseDragReturn {
         document.addEventListener('touchmove', on_touchmove, { passive: false });
         document.addEventListener('touchend', on_touchend);
         event.preventDefault();
+        event.stopPropagation();
     }
 
     function drag_start(y: number) {

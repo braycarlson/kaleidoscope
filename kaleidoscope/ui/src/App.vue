@@ -44,7 +44,7 @@ let timer_fetch: ReturnType<typeof setTimeout> | null = null;
 let interceptors_cleanup: (() => void) | null = null;
 
 const { is_mobile } = use_mobile();
-const { panel_order, panels_disabled, preferences_save, preferences_load } = use_preferences();
+const { panel_order, panels_disabled, side, preferences_save, preferences_load } = use_preferences();
 const {
     panel_active,
     panels_available,
@@ -130,6 +130,11 @@ function panel_enabled_toggle(panel_id: string) {
     });
 }
 
+function side_swap() {
+    side.value = side.value === 'right' ? 'left' : 'right';
+    save();
+}
+
 function refresh_debounced() {
     if (timer_fetch) clearTimeout(timer_fetch);
 
@@ -174,6 +179,7 @@ onUnmounted(function() {
     <div class="font-sans text-[13px] text-[#d0d0e0] leading-normal">
         <KaleidoscopeTab
             v-if="state === 'collapsed'"
+            :side="side"
             @open="strip_open"
         />
 
@@ -181,12 +187,17 @@ onUnmounted(function() {
             v-if="state !== 'collapsed'"
             class="fixed inset-0 z-[999999] flex"
             :class="{
-                'left-auto sm:left-auto': state === 'strip' && !is_mobile,
+                'left-auto sm:left-auto': state === 'strip' && !is_mobile && side === 'right',
+                'right-auto sm:right-auto': state === 'strip' && !is_mobile && side === 'left',
+                'flex-row-reverse': side === 'left',
             }"
+            @mousedown.stop
+            @click.stop
         >
             <div
                 v-if="panel_active && !(is_mobile && state === 'strip')"
-                class="flex flex-col flex-1 min-w-0 bg-[#12121e] border-l border-white/10"
+                class="flex flex-col flex-1 min-w-0 bg-[#12121e] border-white/10"
+                :class="side === 'right' ? 'border-l' : 'border-r'"
             >
                 <div class="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-white/[0.08] bg-[#0e0e1a] shrink-0">
                     <div class="flex items-center gap-3 min-w-0">
@@ -224,9 +235,11 @@ onUnmounted(function() {
                 :panel_active="panel_active"
                 :panel_order="panel_order"
                 :panels_disabled="panels_disabled"
+                :side="side"
                 :is_mobile="is_mobile"
                 @select="panel_select"
                 @close="strip_close"
+                @swap="side_swap"
                 @toggle="panel_enabled_toggle"
                 @reorder="panels_reorder"
             />

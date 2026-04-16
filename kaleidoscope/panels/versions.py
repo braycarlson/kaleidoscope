@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import sys
+import platform
 import threading
 
 import django
@@ -76,7 +76,7 @@ class VersionsPanel(Panel):
             'count': len(packages),
             'django': django.get_version(),
             'packages': packages,
-            'python': sys.version,
+            'python': platform.python_version(),
         }
 
         with self._lock:

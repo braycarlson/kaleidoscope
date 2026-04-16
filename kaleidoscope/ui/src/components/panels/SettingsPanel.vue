@@ -5,6 +5,7 @@ import { use_sort } from '../../composables/use_sort';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import CopyButton from '../CopyButton.vue';
 import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 import SortHeader from './SortHeader.vue';
 
 interface SettingsEntry {
@@ -90,12 +91,11 @@ function expanded_toggle(key: string) {
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Settings</span>
-                <span class="font-semibold text-[15px]">{{ Object.keys(data.settings || {}).length }}</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Settings', value: Object.keys(data.settings || {}).length },
+            ]"
+        />
 
         <CollapsibleSection
             title="Django Settings"
@@ -103,7 +103,7 @@ function expanded_toggle(key: string) {
             :value_copy="data.settings"
         >
             <div class="mb-4 pl-2">
-                <FilterInput v-model="text_filter" placeholder="Filter settings..." />
+                <FilterInput v-model="text_filter" placeholder="Filter..." />
             </div>
 
             <div class="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">

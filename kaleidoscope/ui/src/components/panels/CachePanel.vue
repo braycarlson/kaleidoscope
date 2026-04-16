@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, h } from 'vue';
+import { ref, computed, h } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import CopyButton from '../CopyButton.vue';
 import DataTable from '../DataTable.vue';
+import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 import type { ColumnDef } from '@tanstack/vue-table';
 
 interface CacheCall {
@@ -26,9 +28,23 @@ const props = defineProps<{
     data: CachePanelData;
 }>();
 
+const text_filter = ref('');
+
 const calls_enriched = computed(function(): CacheCall[] {
     return (props.data.calls || []).map(function(call, index) {
         return { ...call, _index: index };
+    });
+});
+
+const calls_filtered = computed(function(): CacheCall[] {
+    const search = text_filter.value.toLowerCase();
+
+    if (!search) return calls_enriched.value;
+
+    return calls_enriched.value.filter(function(call) {
+        return call.method.toLowerCase().includes(search)
+            || call.alias.toLowerCase().includes(search)
+            || call.args.toLowerCase().includes(search);
     });
 });
 
@@ -90,24 +106,14 @@ const columns: ColumnDef<CacheCall, unknown>[] = [
 
 <template>
     <div>
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Calls</span>
-                <span class="font-semibold text-[15px]">{{ data.count }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Hits</span>
-                <span class="font-semibold text-[15px] text-green-500">{{ data.hits }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Misses</span>
-                <span class="font-semibold text-[15px]" :class="data.misses > 0 ? 'text-orange-500' : ''">{{ data.misses }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Time</span>
-                <span class="font-semibold text-[15px]">{{ data.total_time }} ms</span>
-            </div>
-        </div>
+        <PanelHeader
+            :stats="[
+                { label: 'Calls', value: data.count },
+                { label: 'Hits', value: data.hits },
+                { label: 'Misses', value: data.misses },
+                { label: 'Time', value: data.total_time + ' ms' },
+            ]"
+        />
 
         <CollapsibleSection
             v-if="calls_enriched.length"
@@ -115,9 +121,13 @@ const columns: ColumnDef<CacheCall, unknown>[] = [
             :count="data.count"
             :value_copy="data.calls"
         >
+            <div class="mb-4 pl-2">
+                <FilterInput v-model="text_filter" placeholder="Filter..." />
+            </div>
+
             <DataTable
                 :columns="columns"
-                :data="calls_enriched"
+                :data="calls_filtered"
                 :sorting_default="[{ id: 'duration_ms', desc: true }]"
                 expandable
                 width_minimum="400px"

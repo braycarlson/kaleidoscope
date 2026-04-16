@@ -7,6 +7,7 @@ import { use_sort, compare_sort_values } from '../../composables/use_sort';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import CopyButton from '../CopyButton.vue';
 import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 import QueryDetail from './QueryDetail.vue';
 import SortHeader from './SortHeader.vue';
 import type { StackFrame, SortDirection, QuerySortState } from '../../types';
@@ -86,6 +87,7 @@ const query_selected_index = ref(0);
 const query_selected_duplicate_count = ref(0);
 const sorts_query = reactive<Record<number, QuerySortState>>({});
 const text_filter = ref('');
+const text_filter_similar = ref('');
 
 onMounted(function() {
     sql_formatter_preload().catch(function() {
@@ -117,6 +119,16 @@ const groups_similar = computed(function() {
     });
 });
 
+const groups_similar_filtered = computed(function() {
+    const search = text_filter_similar.value.toLowerCase();
+
+    if (!search) return groups_similar.value;
+
+    return groups_similar.value.filter(function(group) {
+        return group.example.toLowerCase().includes(search);
+    });
+});
+
 const query_time_maximum = computed(function() {
     let maximum = 0;
 
@@ -145,6 +157,25 @@ const requests_enriched = computed(function(): RequestEntry[] {
 });
 
 const { sort_column, sort_direction, sorted: requests_sorted, sort_toggle } = use_sort(requests_enriched, 'query_time', 'desc');
+
+const stats_header = computed(function() {
+    const items: { label: string; value: string | number }[] = [
+        { label: 'Requests', value: props.data.summary.request_count },
+        { label: 'Queries', value: props.data.summary.total_queries },
+    ];
+
+    if (count_duplicate.value > 0) {
+        items.push({ label: 'Duplicates', value: count_duplicate.value });
+    }
+
+    if (groups_similar.value.length > 0) {
+        items.push({ label: 'Similar Groups', value: groups_similar.value.length });
+    }
+
+    items.push({ label: 'Time', value: props.data.summary.total_query_time + ' ms' });
+
+    return items;
+});
 
 const requests_filtered = computed(function(): RequestEntry[] {
     const search = text_filter.value.toLowerCase();
@@ -364,28 +395,7 @@ function track_page_toggle() {
             @close="query_close"
         />
 
-        <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Requests</span>
-                <span class="font-semibold text-[15px]">{{ data.summary.request_count }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Queries</span>
-                <span class="font-semibold text-[15px]">{{ data.summary.total_queries }}</span>
-            </div>
-            <div v-if="count_duplicate > 0" class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Duplicates</span>
-                <span class="font-semibold text-[15px] text-orange-500">{{ count_duplicate }}</span>
-            </div>
-            <div v-if="groups_similar.length > 0" class="flex items-center gap-2 hidden sm:flex">
-                <span class="opacity-40 text-[13px]">Similar Groups</span>
-                <span class="font-semibold text-[15px] text-orange-500">{{ groups_similar.length }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="opacity-40 text-[13px]">Time</span>
-                <span class="font-semibold text-[15px]">{{ data.summary.total_query_time }} ms</span>
-            </div>
-        </div>
+        <PanelHeader :stats="stats_header" />
 
         <div class="flex items-center gap-3 sm:gap-6 pb-4 mb-5 border-b border-white/[0.06] flex-wrap">
             <span class="opacity-40 text-[13px]">Track:</span>
@@ -416,7 +426,7 @@ function track_page_toggle() {
             </template>
 
             <div class="mb-4 pl-2">
-                <FilterInput v-model="text_filter" placeholder="Filter by path or SQL..." />
+                <FilterInput v-model="text_filter" placeholder="Filter..." />
             </div>
 
             <div class="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
@@ -449,7 +459,7 @@ function track_page_toggle() {
                                 <td class="w-[70px] px-2 py-2.5 border-b border-white/[0.04]" :class="request.query_count > 10 ? 'text-orange-500 font-semibold' : ''">{{ request.query_count }}</td>
                                 <td class="w-20 sm:w-24 px-2 py-2.5 border-b border-white/[0.04] font-mono whitespace-nowrap">{{ request.query_time }} ms</td>
                                 <td class="w-24 px-2 py-2.5 border-b border-white/[0.04] font-mono whitespace-nowrap hidden sm:table-cell">{{ request.duration }} ms</td>
-                                <td class="w-24 px-2 py-2.5 border-b border-white/[0.04] opacity-45 hidden sm:table-cell" :class="request.duplicate_count > 0 ? 'text-orange-500 font-semibold' : ''">{{ request.duplicate_count || '' }}</td>
+                                <td class="w-24 px-2 py-2.5 border-b border-white/[0.04] hidden sm:table-cell" :class="request.duplicate_count > 10 ? 'text-orange-500 font-semibold' : ''">{{ request.duplicate_count || '' }}</td>
                             </tr>
                             <tr v-if="requests_expanded[request_index]">
                                 <td colspan="9" class="!p-0 !px-1 sm:!px-2.5 !pb-4 border-b border-white/[0.06]">
@@ -470,7 +480,6 @@ function track_page_toggle() {
                                             <thead>
                                                 <tr>
                                                     <th class="w-5 px-2 py-1.5 hidden sm:table-cell" />
-                                                    <SortHeader :column="'index'" :sort_column="query_sort_column(request_index)" :sort_direction="query_sort_direction(request_index)" label="#" class="!w-5 hidden sm:table-cell" @sort="query_sort_toggle(request_index, 'index')" />
                                                     <th class="w-[120px] px-2 py-1.5 text-left text-[11px] font-semibold opacity-40 hidden sm:table-cell">Bar</th>
                                                     <SortHeader :column="'time_ms'" :sort_column="query_sort_column(request_index)" :sort_direction="query_sort_direction(request_index)" label="Time" class="!w-[90px] sm:!w-[110px]" @sort="query_sort_toggle(request_index, 'time_ms')" />
                                                     <th class="w-[60px] px-2 py-1.5 text-left text-[11px] font-semibold opacity-40">Count</th>
@@ -494,10 +503,6 @@ function track_page_toggle() {
                                                             />
                                                         </td>
                                                         <td
-                                                            class="w-5 px-2 py-1.5 text-[13px] opacity-30 border-t border-white/[0.04] align-top hidden sm:table-cell cursor-pointer"
-                                                            @click.stop="query_open(group.primary, group.primary.index)"
-                                                        >{{ group.primary.index + 1 }}</td>
-                                                        <td
                                                             class="w-[120px] px-2 py-1.5 border-t border-white/[0.04] align-middle hidden sm:table-cell cursor-pointer"
                                                             @click.stop="query_open(group.primary, group.primary.index)"
                                                         >
@@ -511,8 +516,7 @@ function track_page_toggle() {
                                                             :title="group.count > 1 ? 'Total ' + group.time_total_ms.toFixed(1) + ' ms, slowest ' + group.time_slowest_ms.toFixed(1) + ' ms, avg ' + group.time_avg_ms.toFixed(1) + ' ms' : ''"
                                                             @click.stop="query_open(group.primary, group.primary.index)"
                                                         >
-                                                            {{ group.time_total_ms.toFixed(1) }}
-                                                            <span v-if="group.count > 1" class="opacity-40 text-[11px]">ms</span>
+                                                            {{ group.time_total_ms.toFixed(1) }} ms
                                                         </td>
                                                         <td class="w-[60px] px-2 py-1.5 border-t border-white/[0.04]">
                                                             <span
@@ -542,13 +546,12 @@ function track_page_toggle() {
                                                             @click.stop="query_open(occurrence, occurrence.index)"
                                                         >
                                                             <td class="w-5 px-2 py-1 border-t border-white/[0.03] hidden sm:table-cell" />
-                                                            <td class="w-5 px-2 py-1 text-[12px] opacity-30 border-t border-white/[0.03] align-top hidden sm:table-cell">{{ occurrence.index + 1 }}</td>
                                                             <td class="w-[120px] px-2 py-1 border-t border-white/[0.03] align-middle hidden sm:table-cell">
                                                                 <div class="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                                                                     <div class="h-full rounded-full" :style="{ width: width_bar(occurrence.time_ms) + '%', backgroundColor: color_bar(occurrence.time_ms) }" />
                                                                 </div>
                                                             </td>
-                                                            <td class="w-[90px] sm:w-[110px] px-2 py-1 border-t border-white/[0.03] align-top text-[12px]" :class="[occurrence.time_ms >= 10 ? 'text-orange-500' : 'opacity-70']">{{ occurrence.time_ms.toFixed(1) }}</td>
+                                                            <td class="w-[90px] sm:w-[110px] px-2 py-1 border-t border-white/[0.03] align-top text-[12px]" :class="[occurrence.time_ms >= 10 ? 'text-orange-500' : 'opacity-70']">{{ occurrence.time_ms.toFixed(1) }} ms</td>
                                                             <td class="w-[60px] px-2 py-1 border-t border-white/[0.03]" />
                                                             <td class="px-2 py-1 border-t border-white/[0.03] align-top max-w-0 opacity-60">
                                                                 <span class="font-mono text-[11px] leading-relaxed whitespace-nowrap overflow-hidden text-ellipsis block">{{ occurrence.sql }}</span>
@@ -576,6 +579,10 @@ function track_page_toggle() {
             :title="'Similar Queries (N+1 Detection) — ' + groups_similar.length + ' groups'"
             :value_copy="groups_similar"
         >
+            <div class="mb-4 pl-2">
+                <FilterInput v-model="text_filter_similar" placeholder="Filter..." />
+            </div>
+
             <div class="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
                 <table class="w-full border-collapse min-w-[350px]">
                     <thead>
@@ -586,7 +593,7 @@ function track_page_toggle() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(group, i) in groups_similar" :key="i" class="hover:bg-white/[0.02]">
+                        <tr v-for="(group, i) in groups_similar_filtered" :key="i" class="hover:bg-white/[0.02]">
                             <td class="w-[60px] px-2 py-1.5 text-[13px] border-t border-white/[0.04]" :class="group.count > 5 ? 'text-orange-500 font-semibold' : ''">{{ group.count }}</td>
                             <td class="w-[80px] px-2 py-1.5 text-[13px] border-t border-white/[0.04]">{{ group.total_time.toFixed(2) }} ms</td>
                             <td class="px-2 py-1.5 border-t border-white/[0.04]">

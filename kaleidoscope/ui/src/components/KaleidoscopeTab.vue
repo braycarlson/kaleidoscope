@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Wrench } from 'lucide-vue-next';
 import { use_drag } from '../composables/use_drag';
 import type { KaleidoscopeSide } from '../types';
 
@@ -20,9 +19,9 @@ const { tab_top, dragging, on_mousedown, on_touchstart } = use_drag(function() {
 
 <template>
     <div
-        class="fixed z-[1000000] bg-[#12121e] border border-white/[0.15] px-3 py-3 select-none flex flex-col items-center gap-1"
+        class="fixed z-[1000000] bg-[#12121e] border border-white/[0.15] px-5 py-5 select-none flex flex-col items-center gap-1"
         :class="[
-            dragging ? 'cursor-grabbing opacity-80' : 'cursor-grab',
+            dragging ? 'cursor-grabbing opacity-80' : 'cursor-grab opacity-75 hover:opacity-100',
             side === 'right'
                 ? 'right-0 rounded-l-md border-r-0'
                 : 'left-0 rounded-r-md border-l-0',
@@ -31,6 +30,6 @@ const { tab_top, dragging, on_mousedown, on_touchstart } = use_drag(function() {
         @mousedown="on_mousedown"
         @touchstart="on_touchstart"
     >
-        <Wrench :size="14" class="opacity-50" />
+        <span class="font-bold text-[15px] tracking-[0.15em] bg-gradient-to-r from-purple-500 via-fuchsia-400 to-purple-300 bg-clip-text text-transparent">dk</span>
     </div>
 </template>

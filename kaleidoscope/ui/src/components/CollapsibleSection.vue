@@ -25,7 +25,7 @@ function toggle() {
 </script>
 
 <template>
-    <div class="mb-4">
+    <div class="mb-8">
         <div class="flex items-center gap-3 mb-2">
             <div
                 class="font-semibold text-[13px] cursor-pointer select-none flex items-center gap-2 hover:opacity-80"

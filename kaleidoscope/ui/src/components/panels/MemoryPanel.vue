@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { use_sort } from '../../composables/use_sort';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import FilterInput from '../FilterInput.vue';
+import PanelHeader from '../PanelHeader.vue';
 import SortHeader from './SortHeader.vue';
 
 interface CategoryStyle {
@@ -76,6 +77,22 @@ const stats = computed(function() {
     return { allocated, freed, unchanged };
 });
 
+const stats_header = computed(function() {
+    const items: { label: string; value: string | number }[] = [];
+
+    if (props.data.total_size_display) {
+        items.push({ label: 'Total Size', value: props.data.total_size_display });
+    }
+
+    if (props.data.total_objects) {
+        items.push({ label: 'Total Objects', value: props.data.total_objects.toLocaleString() });
+    }
+
+    items.push({ label: 'Showing', value: diff_sorted.value.length });
+
+    return items;
+});
+
 const stats_category = computed(function() {
     const rows: MemoryRow[] = props.data.diff || [];
     const counts: Record<string, number> = {};
@@ -114,20 +131,7 @@ function style_for(category: string): CategoryStyle {
         <div v-if="data.error" class="py-10 text-center text-red-400 italic">{{ data.error }}</div>
 
         <template v-else>
-            <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08]">
-                <div v-if="data.total_size_display" class="flex items-center gap-2">
-                    <span class="opacity-40 text-[13px]">Total Size</span>
-                    <span class="font-semibold text-[15px]">{{ data.total_size_display }}</span>
-                </div>
-                <div v-if="data.total_objects" class="flex items-center gap-2">
-                    <span class="opacity-40 text-[13px]">Total Objects</span>
-                    <span class="font-semibold text-[15px]">{{ data.total_objects.toLocaleString() }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="opacity-40 text-[13px]">Showing</span>
-                    <span class="font-semibold text-[15px]">{{ diff_sorted.length }}</span>
-                </div>
-            </div>
+            <PanelHeader :stats="stats_header" />
 
             <CollapsibleSection
                 v-if="diff_sorted.length || (data.diff && data.diff.length)"
@@ -136,10 +140,10 @@ function style_for(category: string): CategoryStyle {
                 :value_copy="data.diff"
             >
                 <div class="mb-4 pl-2">
-                    <FilterInput v-model="text_filter" placeholder="Filter types..." />
+                    <FilterInput v-model="text_filter" placeholder="Filter..." />
                 </div>
 
-                <div class="mb-4 flex flex-col gap-3 pl-2">
+                <div class="mb-4 flex flex-col gap-5 pl-2">
                     <div class="flex items-center gap-3 sm:gap-5 flex-wrap">
                         <span class="opacity-40 text-[12px]">Show</span>
 

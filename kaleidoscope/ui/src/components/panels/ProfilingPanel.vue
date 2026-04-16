@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { ChevronRight, ExternalLink } from 'lucide-vue-next';
 import CopyButton from '../CopyButton.vue';
+import PanelHeader from '../PanelHeader.vue';
 
 interface ProfilingPanelData {
     duration_ms: number;
@@ -55,11 +56,7 @@ function on_iframe_load(event: unknown) {
         <div v-if="data.error" class="py-10 text-center text-red-400 italic">{{ data.error }}</div>
 
         <template v-else>
-            <div class="flex flex-wrap items-center gap-3 sm:gap-7 pb-4 mb-5 border-b border-white/[0.08] shrink-0">
-                <div class="flex items-center gap-2">
-                    <span class="opacity-40 text-[13px]">Duration</span>
-                    <span class="font-semibold text-[15px]">{{ data.duration_ms || 0 }} ms</span>
-                </div>
+            <PanelHeader :stats="[{ label: 'Duration', value: (data.duration_ms || 0) + ' ms' }]">
                 <a
                     v-if="data.html"
                     href="/__kaleidoscope__/panels/profiling/action/html/"
@@ -69,7 +66,7 @@ function on_iframe_load(event: unknown) {
                     <ExternalLink :size="13" />
                     Open in New Tab
                 </a>
-            </div>
+            </PanelHeader>
 
             <template v-if="data.text">
                 <div class="flex items-center gap-3 mb-3 shrink-0">

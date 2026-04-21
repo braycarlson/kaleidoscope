@@ -32,13 +32,14 @@ class TemplatesPanel(Panel, Installable, RequestHook, ResponseHook):
     panel_id = 'templates'
     title = 'Templates'
 
+    _original_render = Template.render
+
     def __init__(self) -> None:
         super().__init__()
 
         self._data: dict = {}
         self._context_raw: list[dict] = []
         self._lock = threading.Lock()
-        self._original_render = Template.render
         self._serializer = Serializer()
 
     def _collect_context(self, context: object) -> tuple[dict, list[str]]:
@@ -80,7 +81,7 @@ class TemplatesPanel(Panel, Installable, RequestHook, ResponseHook):
 
     def install(self) -> None:
         panel = self
-        original = self._original_render
+        original = TemplatesPanel._original_render
 
         @functools.wraps(original)
         def patched_render(template_self: Template, context: object) -> str:
@@ -113,7 +114,7 @@ class TemplatesPanel(Panel, Installable, RequestHook, ResponseHook):
         Template.render = patched_render  # ty:ignore[invalid-assignment]
 
     def uninstall(self) -> None:
-        Template.render = self._original_render
+        Template.render = TemplatesPanel._original_render
 
     def get_data(self) -> dict:
         with self._lock:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+
 from typing import TYPE_CHECKING
 
 from django.db.models import Model
@@ -14,6 +16,10 @@ from kaleidoscope.constants import (
 
 if TYPE_CHECKING:
     from typing import Any
+
+
+def _is_enum_class(value: object) -> bool:
+    return isinstance(value, type) and issubclass(value, enum.Enum)
 
 
 class Serializer:
@@ -56,6 +62,9 @@ class Serializer:
 
         if isinstance(value, (set, frozenset)):
             return f'set[{len(value)}]'
+
+        if _is_enum_class(value):
+            return f'<{value.__name__}[{len(value)}]>'
 
         if callable(value):
             name = (
@@ -103,6 +112,9 @@ class Serializer:
 
             if isinstance(value, (str, int, float, bool)) or value is None:
                 return False
+
+            if _is_enum_class(value):
+                return len(value) > 0
 
             if callable(value):
                 return False
@@ -271,6 +283,31 @@ class Serializer:
             'truncated': truncated,
         }
 
+    def _serialize_enum_class(self, value: type[enum.Enum]) -> dict:
+        members = list(value)
+        entries = []
+        truncated = 0
+
+        for index, member in enumerate(members):
+            if index >= CONTEXT_CHILDREN_MAX:
+                truncated = len(members) - CONTEXT_CHILDREN_MAX
+                break
+
+            entries.append({
+                'label': member.name,
+                'preview': self.preview(member.value),
+                'has_children': self.has_children(member.value),
+                'step': {'kind': 'item', 'index': index},
+            })
+
+        return {
+            'type': 'enum',
+            'class_name': value.__name__,
+            'size': len(members),
+            'items': entries,
+            'truncated': truncated,
+        }
+
     def _serialize_object(self, value: object, var_dict: dict) -> dict:
         attributes = []
         truncated = 0
@@ -320,6 +357,9 @@ class Serializer:
 
     def _serialize_fallback(self, value: object) -> dict:
         class_name = type(value).__name__
+
+        if _is_enum_class(value):
+            return self._serialize_enum_class(value)
 
         if callable(value):
             name = (
@@ -394,6 +434,14 @@ class Serializer:
                 raise IndexError(index)
 
             return entries[index]
+
+        if _is_enum_class(current):
+            members = list(current)
+
+            if index < 0 or index >= len(members):
+                raise IndexError(index)
+
+            return members[index].value
 
         message = 'Not indexable'
         raise TypeError(message)

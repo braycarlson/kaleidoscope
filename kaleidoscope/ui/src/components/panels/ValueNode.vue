@@ -99,7 +99,7 @@ onMounted(function() {
 });
 
 function is_container(type: string): boolean {
-    return ['dict', 'list', 'tuple', 'set', 'object', 'model', 'queryset'].indexOf(type) !== -1;
+    return ['dict', 'list', 'tuple', 'set', 'object', 'model', 'queryset', 'enum'].indexOf(type) !== -1;
 }
 
 function children_of(node: ValueData): ChildEntry[] {
@@ -108,7 +108,7 @@ function children_of(node: ValueData): ChildEntry[] {
 }
 
 function children_separator(node: ValueData): string {
-    if (node.type === 'object' || node.type === 'model') return '=';
+    if (node.type === 'object' || node.type === 'model' || node.type === 'enum') return '=';
     return ':';
 }
 
@@ -116,6 +116,7 @@ function container_header(node: ValueData): string {
     if (node.type === 'object') return '<' + node.class_name + '>';
     if (node.type === 'model') return '<' + node.class_name + ' pk=' + node.pk + '>';
     if (node.type === 'queryset') return '<QuerySet [' + node.model + '] size=' + node.size + '>';
+    if (node.type === 'enum') return '<' + node.class_name + '[' + node.size + ']>';
     if (node.type === 'dict') return 'dict[' + node.size + ']';
     if (node.type === 'list') return 'list[' + node.size + ']';
     if (node.type === 'tuple') return 'tuple[' + node.size + ']';

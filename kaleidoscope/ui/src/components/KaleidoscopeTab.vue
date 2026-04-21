@@ -19,7 +19,7 @@ const { tab_top, dragging, on_mousedown, on_touchstart } = use_drag(function() {
 
 <template>
     <div
-        class="fixed z-[1000000] bg-[#12121e] border border-white/[0.15] px-5 py-5 select-none flex flex-col items-center gap-1"
+        class="fixed z-[1000000] bg-ks-panel border border-ks-tab shadow-ks-tab px-4 py-5 select-none flex flex-col items-center gap-1"
         :class="[
             dragging ? 'cursor-grabbing opacity-80' : 'cursor-grab opacity-75 hover:opacity-100',
             side === 'right'

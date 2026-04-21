@@ -51,7 +51,7 @@ const nodes = computed(function(): (VNode | string)[] {
 const Highlighted = computed(function() {
     if (props.block) {
         return h('pre', {
-            class: 'ks-code-block font-mono text-[12px] leading-5 whitespace-pre overflow-x-auto p-3 rounded border border-white/[0.06] bg-black/30',
+            class: 'ks-code-block font-mono text-[12px] leading-5 whitespace-pre overflow-x-auto p-3 rounded border border-ks-section bg-ks-code',
         }, [h('code', {}, nodes.value)]);
     }
 

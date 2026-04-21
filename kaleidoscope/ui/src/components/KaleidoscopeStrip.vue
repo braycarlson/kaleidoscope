@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Info, X, GripVertical, PanelLeft, PanelLeftClose, PanelRight, PanelRightClose } from 'lucide-vue-next';
+import { Info, Moon, Sun, X, GripVertical, PanelLeft, PanelLeftClose, PanelRight, PanelRightClose } from 'lucide-vue-next';
 import type { KaleidoscopeSide, PanelMeta } from '../types';
+import type { Theme } from '../composables/use_theme';
 
 const props = withDefaults(defineProps<{
     panels: PanelMeta[];
@@ -10,12 +11,14 @@ const props = withDefaults(defineProps<{
     panels_disabled?: Record<string, boolean>;
     side?: KaleidoscopeSide;
     is_mobile?: boolean;
+    theme?: Theme;
 }>(), {
     panel_active: null,
     panel_order: () => [],
     panels_disabled: () => ({}),
     side: 'right',
     is_mobile: false,
+    theme: 'dark',
 });
 
 const emit = defineEmits<{
@@ -24,6 +27,7 @@ const emit = defineEmits<{
     swap: [];
     toggle: [panel_id: string];
     reorder: [order: string[]];
+    theme_toggle: [];
 }>();
 
 const index_drag = ref<number | null>(null);
@@ -96,28 +100,39 @@ function on_drag_end() {
 
 <template>
     <div
-        class="flex flex-col bg-black/95 backdrop-blur-md shrink-0"
+        class="flex flex-col bg-ks-strip backdrop-blur-md shrink-0"
         :class="[
             is_mobile ? 'w-full' : 'w-64 min-w-[256px]',
-            side === 'right' ? 'border-l border-white/10' : 'border-r border-white/10',
+            side === 'right' ? 'border-l border-ks-tab' : 'border-r border-ks-tab',
         ]"
     >
         <div
-            class="flex items-center justify-between px-3.5 py-3 shrink-0 cursor-pointer transition-colors hover:bg-white/[0.03] group"
-            style="border-bottom: 1px solid rgba(255, 255, 255, 0.15)"
-            @click="emit('close')"
+            class="flex items-center px-3.5 py-3 shrink-0 border-b border-ks-tab"
         >
-            <span class="text-[15px] tracking-[0.15em] text-purple-300">Kaleidoscope</span>
-            <X :size="16" class="text-gray-400 group-hover:text-white transition-colors" />
+            <div
+                class="w-8 h-8 -ml-1 shrink-0 flex items-center justify-center cursor-pointer text-ks-strip-icon hover:text-ks-strip-hi transition-colors"
+                @click="emit('theme_toggle')"
+            >
+                <Sun v-if="theme === 'dark'" :size="14" />
+                <Moon v-else :size="14" />
+            </div>
+            <span class="flex-1 text-center text-[15px] tracking-[0.15em] text-ks-brand cursor-pointer -my-3 py-3" @click="emit('close')">Kaleidoscope</span>
+            <div
+                class="w-8 h-8 -mr-1 shrink-0 flex items-center justify-center cursor-pointer text-ks-strip-icon hover:text-ks-strip-hi transition-colors"
+                @click="emit('close')"
+            >
+                <X :size="14" />
+            </div>
         </div>
 
         <div v-if="is_isolated" class="mx-3 mt-3 relative">
-            <div class="px-3 py-2.5 bg-orange-500/10 border border-orange-500/20 rounded text-[11px] text-center leading-relaxed flex items-center justify-center gap-1.5">
+            <div class="px-3 py-2.5 bg-ks-warn border border-ks-warn rounded text-[11px] text-center leading-relaxed flex items-center justify-center gap-1.5">
                 <span class="font-semibold text-orange-400">Isolation Mode</span>
                 <div class="group inline-flex items-center">
                     <Info :size="13" class="text-orange-400/50 group-hover:text-orange-400 cursor-help" />
-                    <div class="absolute top-full left-0 right-0 mt-1 px-3 py-2.5 bg-[#0e0e1a] border border-white/[0.15] rounded text-[11px] text-gray-300 leading-relaxed hidden group-hover:block pointer-events-none z-10">
-                        There is at least one enabled panel that is running in isolation mode. These panel(s) are isolated to measure performance and run exclusively to keep the measurement more accurate. As such, other panels will not record new information.
+                    <div class="absolute top-full left-0 right-0 mt-1 px-3 py-2.5 bg-ks-header border border-ks-tab rounded text-[11px] text-ks-strip leading-relaxed hidden group-hover:block pointer-events-none z-10">
+                        There is at least one enabled panel that is running in isolation mode.
+                        These panel(s) are isolated to measure performance and run exclusively to keep the measurement more accurate. As such, other panels will not record new information.
                     </div>
                 </div>
             </div>
@@ -131,13 +146,13 @@ function on_drag_end() {
                 class="flex items-center gap-1 pr-3 transition-colors"
                 :class="[
                     panel_active === panel.id
-                        ? (side === 'right' ? 'border-l-[3px] border-purple-700' : 'border-r-[3px] border-purple-700') + ' bg-white/[0.06]'
-                        : (side === 'right' ? 'border-l-[3px]' : 'border-r-[3px]') + ' border-transparent hover:bg-white/[0.03]',
+                        ? (side === 'right' ? 'border-l-[3px] border-purple-700' : 'border-r-[3px] border-purple-700') + ' bg-ks-strip-active'
+                        : (side === 'right' ? 'border-l-[3px]' : 'border-r-[3px]') + ' border-transparent hover:bg-ks-strip-hover',
                     index_drag_over === index && index_drag !== index
                         ? 'border-t border-t-purple-500'
                         : '',
                     index_drag === index ? 'opacity-40' : '',
-                    !is_enabled(panel.id) ? 'opacity-30' : '',
+                    !is_enabled(panel.id) ? 'opacity-45' : '',
                     is_paused(panel) ? 'opacity-45' : '',
                 ]"
                 @dragstart="on_drag_start(index, $event)"
@@ -145,7 +160,7 @@ function on_drag_end() {
                 @drop="on_drop(index)"
                 @dragend="on_drag_end"
             >
-                <div class="px-1 cursor-grab opacity-20 hover:opacity-40 shrink-0 hidden sm:block">
+                <div class="px-1 cursor-grab text-ks-grip hover:text-ks-muted shrink-0 hidden sm:block">
                     <GripVertical :size="12" />
                 </div>
 
@@ -154,15 +169,15 @@ function on_drag_end() {
                     :class="[
                         is_mobile ? 'pl-3 sm:pl-0' : '',
                         is_enabled(panel.id)
-                            ? (panel_active === panel.id ? 'text-white' : 'text-gray-300 hover:text-white')
-                            : 'text-gray-600 cursor-default',
+                            ? (panel_active === panel.id ? 'text-ks-strip-hi' : 'text-ks-strip hover:text-ks-strip-hi')
+                            : 'text-ks-strip-dim cursor-default',
                     ]"
                     @click="on_click(panel)"
                 >
                     <span class="font-semibold">{{ panel.title }}</span>
                     <span class="text-[11px] opacity-50">
                         <template v-if="is_paused(panel)">
-                            <span class="text-orange-400/60 italic">paused</span>
+                            <span class="text-ks-warn-subtle italic">paused</span>
                         </template>
                         <template v-else>
                             {{ panel.summary }}
@@ -172,7 +187,7 @@ function on_drag_end() {
 
                 <div
                     class="relative w-7 h-4 rounded-full transition-colors cursor-pointer shrink-0"
-                    :class="is_enabled(panel.id) ? 'bg-purple-600' : 'bg-white/10'"
+                    :class="is_enabled(panel.id) ? 'bg-purple-600' : 'bg-ks-toggle-off'"
                     @click.stop="emit('toggle', panel.id)"
                 >
                     <div
@@ -183,21 +198,18 @@ function on_drag_end() {
             </div>
         </div>
 
-        <div
-            class="flex items-center shrink-0"
-            style="border-top: 1px solid rgba(255, 255, 255, 0.15)"
-        >
+        <div class="flex items-center shrink-0 border-t border-ks-tab">
             <div
-                class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+                class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-ks-strip-icon hover:text-ks-strip transition-colors"
                 @click="emit('swap')"
             >
                 <PanelLeft v-if="side === 'right'" :size="14" />
                 <PanelRight v-else :size="14" />
                 <span class="text-[12px]">Move</span>
             </div>
-            <div class="w-px h-5 bg-white/[0.15]" />
+            <div class="w-px h-5 bg-ks-tab" />
             <div
-                class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+                class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-ks-strip-icon hover:text-ks-strip transition-colors"
                 @click="emit('close')"
             >
                 <PanelLeftClose v-if="side === 'left'" :size="14" />

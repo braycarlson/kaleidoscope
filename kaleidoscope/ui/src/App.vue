@@ -20,6 +20,7 @@ import { use_interceptors } from './composables/use_interceptors';
 import { use_mobile } from './composables/use_mobile';
 import { use_panels } from './composables/use_panels';
 import { use_preferences } from './composables/use_preferences';
+import { use_theme } from './composables/use_theme';
 import { json_fetch } from './services/api';
 import { DEBOUNCE_MS } from './constants';
 import type { KaleidoscopeState, PanelRegistry } from './types';
@@ -42,6 +43,8 @@ const panel_registry: PanelRegistry = {
 const state = ref<KaleidoscopeState>('collapsed');
 let timer_fetch: ReturnType<typeof setTimeout> | null = null;
 let interceptors_cleanup: (() => void) | null = null;
+
+const { theme, toggle: theme_toggle } = use_theme();
 
 const { is_mobile } = use_mobile();
 const { panel_order, panels_disabled, side, preferences_save, preferences_load } = use_preferences();
@@ -176,7 +179,10 @@ onUnmounted(function() {
 </script>
 
 <template>
-    <div class="font-sans text-[13px] text-[#d0d0e0] leading-normal">
+    <div
+        class="font-sans text-[13px] leading-normal"
+        :class="theme === 'light' ? 'ks-light' : 'ks-dark'"
+    >
         <KaleidoscopeTab
             v-if="state === 'collapsed'"
             :side="side"
@@ -196,14 +202,14 @@ onUnmounted(function() {
         >
             <div
                 v-if="panel_active && !(is_mobile && state === 'strip')"
-                class="flex flex-col flex-1 min-w-0 bg-[#12121e] border-white/10"
+                class="flex flex-col flex-1 min-w-0 bg-ks-panel border-ks"
                 :class="side === 'right' ? 'border-l' : 'border-r'"
             >
-                <div class="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-white/[0.08] bg-[#0e0e1a] shrink-0">
+                <div class="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-ks-subtle bg-ks-header shrink-0">
                     <div class="flex items-center gap-3 min-w-0">
                         <button
                             v-if="is_mobile"
-                            class="shrink-0 text-gray-500 hover:text-white"
+                            class="shrink-0 text-ks-muted hover:text-ks"
                             @click="strip_return"
                         >
                             <ArrowLeft :size="18" />
@@ -214,7 +220,7 @@ onUnmounted(function() {
                             :value="panel_data"
                         />
                     </div>
-                    <button class="shrink-0 text-gray-500 hover:text-white ml-3" @click="overlay_close">
+                    <button class="shrink-0 text-ks-muted hover:text-ks ml-3" @click="overlay_close">
                         <X :size="18" />
                     </button>
                 </div>
@@ -225,7 +231,7 @@ onUnmounted(function() {
                         :data="panel_data"
                         @refresh="panel_refresh"
                     />
-                    <div v-else class="py-10 text-center opacity-30 italic">Loading...</div>
+                    <div v-else class="py-10 text-center text-ks-faint italic">Loading...</div>
                 </div>
             </div>
 
@@ -237,11 +243,13 @@ onUnmounted(function() {
                 :panels_disabled="panels_disabled"
                 :side="side"
                 :is_mobile="is_mobile"
+                :theme="theme"
                 @select="panel_select"
                 @close="strip_close"
                 @swap="side_swap"
                 @toggle="panel_enabled_toggle"
                 @reorder="panels_reorder"
+                @theme_toggle="theme_toggle"
             />
         </div>
     </div>

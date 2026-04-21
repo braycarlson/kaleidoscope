@@ -67,12 +67,12 @@ const stats_header = computed(function() {
 
 <template>
     <div class="fixed inset-0 z-[1000001] flex items-stretch justify-end">
-        <div class="flex-1 bg-black/40 hidden sm:block" @click="emit('close')" />
-        <div class="w-full sm:w-[700px] sm:max-w-[80vw] bg-[#12121e] border-l border-white/10 flex flex-col overflow-hidden">
-            <div class="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-white/[0.08] bg-[#0e0e1a] shrink-0">
+        <div class="flex-1 bg-ks-overlay hidden sm:block" @click="emit('close')" />
+        <div class="w-full sm:w-[700px] sm:max-w-[80vw] bg-ks-panel border-l border-ks flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-ks-subtle bg-ks-header shrink-0">
                 <span class="font-semibold text-sm">Query #{{ index + 1 }}</span>
                 <div class="flex items-center shrink-0">
-                    <button class="text-gray-500 hover:text-white" @click="emit('close')">
+                    <button class="text-ks-muted hover:text-ks" @click="emit('close')">
                         <X :size="18" />
                     </button>
                 </div>
@@ -97,17 +97,17 @@ const stats_header = computed(function() {
                 </CollapsibleSection>
 
                 <CollapsibleSection v-if="query.stack && query.stack.length" title="Stack Trace" :value_copy="query.stack">
-                    <div class="rounded border border-white/[0.06] overflow-hidden bg-black/30">
+                    <div class="rounded border border-ks-section overflow-hidden bg-ks-code">
                         <div
                             v-for="(frame, i) in query.stack"
                             :key="i"
-                            class="px-3 py-2 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]"
+                            class="px-3 py-2 border-b border-ks-row last:border-0 hover:bg-ks-hover"
                         >
                             <div class="flex items-baseline gap-2">
                                 <span class="font-mono text-[12px] text-blue-400 shrink-0">{{ frame.function }}</span>
-                                <span class="font-mono text-[11px] opacity-30 overflow-hidden text-ellipsis whitespace-nowrap" :title="frame.file">{{ frame.file }}:{{ frame.line }}</span>
+                                <span class="font-mono text-[11px] text-ks-faint overflow-hidden text-ellipsis whitespace-nowrap" :title="frame.file">{{ frame.file }}:{{ frame.line }}</span>
                             </div>
-                            <div v-if="frame.text" class="font-mono text-[11px] opacity-40 mt-0.5 pl-2 border-l-2 border-white/[0.06]">{{ frame.text }}</div>
+                            <div v-if="frame.text" class="font-mono text-[11px] text-ks-muted mt-0.5 pl-2 border-l-2 border-ks-section">{{ frame.text }}</div>
                         </div>
                     </div>
                 </CollapsibleSection>

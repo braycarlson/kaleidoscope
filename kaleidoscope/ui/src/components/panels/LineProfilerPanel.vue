@@ -48,10 +48,10 @@ const profile_copy = computed(function(): string {
 });
 
 function class_row(percent: number): string {
-    if (percent >= 40) return 'bg-red-500/20';
-    if (percent >= 20) return 'bg-orange-500/15';
-    if (percent >= 10) return 'bg-yellow-500/10';
-    if (percent >= 5) return 'bg-yellow-500/[0.04]';
+    if (percent >= 40) return 'bg-ks-row-critical';
+    if (percent >= 20) return 'bg-ks-row-high';
+    if (percent >= 10) return 'bg-ks-row-medium';
+    if (percent >= 5) return 'bg-ks-row-low';
     return '';
 }
 
@@ -98,32 +98,32 @@ const stats = computed(function() {
                         <table class="w-full border-collapse min-w-[500px]">
                             <thead>
                                 <tr>
-                                    <th class="w-14 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-white/[0.06]">Line</th>
-                                    <th class="w-14 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-white/[0.06]">Hits</th>
-                                    <th class="w-20 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-white/[0.06] hidden sm:table-cell">Time</th>
-                                    <th class="w-16 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-white/[0.06]">
+                                    <th class="w-14 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-ks-section">Line</th>
+                                    <th class="w-14 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-ks-section">Hits</th>
+                                    <th class="w-20 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-ks-section hidden sm:table-cell">Time</th>
+                                    <th class="w-16 px-2 py-1 text-right text-[11px] font-semibold opacity-30 border-b border-ks-section">
                                         <span class="flex items-center justify-end gap-1.5">
                                             %
-                                            <span class="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden hidden sm:block" />
+                                            <span class="w-12 h-1.5 rounded-full bg-ks-toggle-off overflow-hidden hidden sm:block" />
                                         </span>
                                     </th>
-                                    <th class="px-2 py-1 text-left text-[11px] font-semibold opacity-30 border-b border-white/[0.06]">Source</th>
+                                    <th class="px-2 py-1 text-left text-[11px] font-semibold opacity-30 border-b border-ks-section">Source</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="(line, line_index) in fn.lines" :key="line_index" :class="class_row(line.pct)">
-                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono opacity-25 border-t border-white/[0.03]">{{ line.lineno }}</td>
-                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono opacity-50 border-t border-white/[0.03]">{{ line.hits }}</td>
-                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono opacity-40 border-t border-white/[0.03] hidden sm:table-cell">
+                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono opacity-25 border-t border-ks-row">{{ line.lineno }}</td>
+                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono opacity-50 border-t border-ks-row">{{ line.hits }}</td>
+                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono opacity-40 border-t border-ks-row hidden sm:table-cell">
                                         <span class="flex items-center justify-end gap-1.5" :class="class_time(line.pct)">
-                                            <span v-if="line.time_ms > 0" class="w-12 h-1.5 rounded-full bg-white/[0.06] overflow-hidden hidden sm:block">
+                                            <span v-if="line.time_ms > 0" class="w-12 h-1.5 rounded-full bg-ks-toggle-off overflow-hidden hidden sm:block">
                                                 <div class="h-full rounded-full bg-current" :style="{ width: Math.min(100, line.pct) + '%' }" />
                                             </span>
                                             {{ line.time_ms.toFixed(2) }}
                                         </span>
                                     </td>
-                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono border-t border-white/[0.03]" :class="class_time(line.pct)">{{ line.pct.toFixed(1) }}%</td>
-                                    <td class="px-2 py-0.5 text-[12px] font-mono border-t border-white/[0.03] whitespace-pre overflow-hidden text-ellipsis">{{ line.source }}</td>
+                                    <td class="px-2 py-0.5 text-right text-[12px] font-mono border-t border-ks-row" :class="class_time(line.pct)">{{ line.pct.toFixed(1) }}%</td>
+                                    <td class="px-2 py-0.5 text-[12px] font-mono border-t border-ks-row whitespace-pre overflow-hidden text-ellipsis">{{ line.source }}</td>
                                 </tr>
                             </tbody>
                         </table>

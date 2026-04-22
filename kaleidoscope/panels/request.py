@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import threading
 
 from typing import TYPE_CHECKING
@@ -74,12 +75,18 @@ class RequestPanel(Panel, RequestHook, ResponseHook):
 
         if hasattr(request, 'resolver_match') and request.resolver_match:
             match = request.resolver_match
+            func = match.func
+
+            while isinstance(func, functools.partial):
+                func = func.func
 
             data['view'] = {
                 'args': list(match.args),
-                'func': f'{match.func.__module__}.{match.func.__qualname__}',
+                'func': f'{func.__module__}.{func.__qualname__}',
                 'kwargs': dict(match.kwargs),
+                'route': getattr(match, 'route', ''),
                 'url_name': match.url_name or '',
+                'view_name': match.view_name or '',
             }
 
         with self._lock:

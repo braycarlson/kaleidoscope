@@ -1,0 +1,12 @@
+<div class="col">
+    <div class="card h-100 demo-stat">
+        <div class="card-body py-3">
+            <div class="text-uppercase small fw-semibold text-body-secondary letter-spaced">{{ label }}</div>
+            <div class="fs-4 fw-semibold demo-numeric mt-1">{{ value }}</div>
+
+            {% if hint %}
+                <div class="small text-body-secondary mt-1">{{ hint }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='Dicts built' value=result.rows hint='one per loop iteration' %}
+        {% include 'partial/stat_card.html' with label='Index entries' value=result.indexed hint='a second copy, keyed by label' %}
+        {% include 'partial/stat_card.html' with label='Distinct digests' value=result.distinct_digests hint='a third list, then a set' %}
+        {% include 'partial/stat_card.html' with label='Rows still held' value=result.retained hint='grows on every request' %}
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <p class="mb-0">The view builds tens of thousands of throwaway dictionaries, a list inside each one, an index over them and a set of their digests. Most of that dies with the response, but a module-level list keeps four thousand rows from every request and never evicts anything. The Memory panel diffs the heap across the request and shows which types survived.</p>
+
+            <a class="btn btn-outline-primary btn-sm mt-4" href="{% url 'bookstore:memory' %}">Allocate again</a>
+        </div>
+    </div>
+{% endblock %}

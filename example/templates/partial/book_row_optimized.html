@@ -1,0 +1,13 @@
+<tr>
+    <td>
+        <a class="link-body-emphasis text-decoration-none fw-medium" href="{% url 'bookstore:book_detail' book.pk %}">{{ book.title }}</a>
+        <div class="small text-body-secondary demo-numeric">{{ book.isbn }}</div>
+    </td>
+    <td class="text-nowrap">{{ book.author.name }}</td>
+    <td class="text-nowrap text-body-secondary">{{ book.author.publisher.name }}</td>
+    <td class="text-nowrap text-body-secondary">{{ book.publisher.name }}</td>
+    <td>{% include 'partial/tag_list.html' %}</td>
+    <td class="text-end demo-numeric">{{ book.tally }}</td>
+    <td>{% include 'partial/rating.html' with rating=book.rating_average|default:0 %}</td>
+    <td class="text-end demo-numeric">${{ book.price }}</td>
+</tr>

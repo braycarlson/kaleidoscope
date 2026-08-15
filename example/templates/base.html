@@ -1,0 +1,33 @@
+{% load static %}<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{{ page_title }} &middot; Kaleidoscope Example</title>
+
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/demo.css' %}">
+
+    <script src="{% static 'js/demo.js' %}"></script>
+    <script src="{% static 'vendor/alpine/alpine.min.js' %}" defer></script>
+</head>
+<body>
+    {% include 'partial/nav.html' %}
+
+    <main class="container-xxl px-3 px-lg-4 py-4">
+        {% include 'partial/page_header.html' %}
+
+        {% if notes %}
+            {% include 'partial/note.html' %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'partial/footer.html' %}
+
+    <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg border-bottom border-body sticky-top demo-navbar">
+    <div class="container-xxl px-3 px-lg-4">
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="{% url 'bookstore:dashboard' %}">
+            <img src="{% static 'img/logo.svg' %}" width="26" height="26" alt="">
+            <span>Kaleidoscope Bookstore</span>
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#demo-nav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="demo-nav">
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:dashboard' %}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:book_list' %}">Books</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:book_list_optimized' %}">Books (fixed)</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:author_list' %}">Authors</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:customer_list' %}">Customers</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:order_list' %}">Orders</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:report' %}">Reports</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:search' %}">Search</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:cache' %}">Cache</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'bookstore:memory' %}">Memory</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>

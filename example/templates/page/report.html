@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='View time' value=duration_ms hint='milliseconds inside the view' %}
+        {% include 'partial/stat_card.html' with label='Fingerprint size' value=fingerprint_length hint='characters built by string concatenation' %}
+        {% include 'partial/stat_card.html' with label='Publishers ranked' value=top_publishers|length hint='sorted in Python' %}
+        {% include 'partial/stat_card.html' with label='Titles ranked' value=top_titles|length hint='sorted in Python' %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-transparent fw-semibold">Rating histogram</div>
+
+                <div class="card-body">
+                    {% for rating, tally in histogram %}
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <span class="demo-numeric text-body-secondary" style="width: 1.5rem">{{ rating }}</span>
+
+                            <div class="progress flex-grow-1" style="height: 0.5rem">
+                                <div class="progress-bar" style="width: {% widthratio tally 600 100 %}%"></div>
+                            </div>
+
+                            <span class="demo-numeric small text-body-secondary" style="width: 3rem">{{ tally }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-transparent fw-semibold">Revenue by publisher</div>
+
+                <ul class="list-group list-group-flush">
+                    {% for name, revenue in top_publishers %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between gap-3">
+                            <span class="text-truncate">{{ name }}</span>
+                            <span class="demo-numeric">${{ revenue|floatformat:2 }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-transparent fw-semibold">Revenue by title</div>
+
+                <ul class="list-group list-group-flush">
+                    {% for title, revenue in top_titles %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between gap-3">
+                            <span class="text-truncate">{{ title }}</span>
+                            <span class="demo-numeric">${{ revenue|floatformat:2 }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

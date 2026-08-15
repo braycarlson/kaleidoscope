@@ -1,0 +1,10 @@
+<header class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div>
+        <div class="text-uppercase small fw-semibold text-body-secondary letter-spaced">{{ page_kicker|default:'Kaleidoscope demo' }}</div>
+        <h1 class="h3 mb-0 mt-1">{{ page_title }}</h1>
+    </div>
+
+    {% if page_action_url %}
+        <a class="btn btn-outline-primary btn-sm" href="{{ page_action_url }}">{{ page_action_label }}</a>
+    {% endif %}
+</header>

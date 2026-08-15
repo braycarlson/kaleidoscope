@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='Authors loaded' value=total_authors hint='every row, every column' %}
+        {% include 'partial/stat_card.html' with label='Books loaded' value=total_books hint='walked per author' %}
+        {% include 'partial/stat_card.html' with label='Rows shown' value=rows|length hint='sliced after sorting in Python' %}
+        {% include 'partial/stat_card.html' with label='Sort location' value='Python' hint='not ORDER BY' %}
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+            <span class="fw-semibold">Authors by average rating</span>
+            <span class="badge bg-danger-subtle text-danger-emphasis fw-normal">count() per author</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Author</th>
+                        <th>Publisher</th>
+                        <th>Country</th>
+                        <th class="text-end">Books</th>
+                        <th class="text-end">Reviews</th>
+                        <th>Average rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td class="fw-medium">{{ row.author.name }}</td>
+                            <td class="text-body-secondary">{{ row.publisher_name }}</td>
+                            <td class="text-body-secondary">{{ row.author.country }}</td>
+                            <td class="text-end demo-numeric">{{ row.book_count }}</td>
+                            <td class="text-end demo-numeric">{{ row.review_count }}</td>
+                            <td>{% include 'partial/rating.html' with rating=row.average_rating %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

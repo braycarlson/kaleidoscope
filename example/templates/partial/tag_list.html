@@ -1,0 +1,9 @@
+<div class="d-flex flex-wrap gap-1">
+    {% for category in book.categories.all %}
+        <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis fw-normal">{{ category.name }}</span>
+    {% endfor %}
+
+    {% for tag in book.tags.all %}
+        <span class="badge rounded-pill bg-body-secondary text-body-secondary fw-normal">{{ tag.name }}</span>
+    {% endfor %}
+</div>

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row g-4">
+        <div class="col-12 col-xl-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <span class="fw-semibold">{{ book.title }}</span>
+                        {% include 'partial/rating.html' with rating=book.average_rating %}
+                    </div>
+
+                    <div class="small text-body-secondary demo-numeric mt-1">{{ book.isbn }}</div>
+
+                    <div class="mt-3">{% include 'partial/tag_list.html' %}</div>
+
+                    <dl class="row mt-4 mb-0 small">
+                        <dt class="col-4 col-sm-3 text-body-secondary fw-normal">Author</dt>
+                        <dd class="col-8 col-sm-9">{{ book.author.name }}</dd>
+
+                        <dt class="col-4 col-sm-3 text-body-secondary fw-normal">Publisher</dt>
+                        <dd class="col-8 col-sm-9">{{ book.publisher.name }}</dd>
+
+                        <dt class="col-4 col-sm-3 text-body-secondary fw-normal">Published</dt>
+                        <dd class="col-8 col-sm-9 demo-numeric">{{ book.published_on }}</dd>
+
+                        <dt class="col-4 col-sm-3 text-body-secondary fw-normal">Pages</dt>
+                        <dd class="col-8 col-sm-9 demo-numeric">{{ book.page_count }}</dd>
+
+                        <dt class="col-4 col-sm-3 text-body-secondary fw-normal">Price</dt>
+                        <dd class="col-8 col-sm-9 demo-numeric">${{ book.price }}</dd>
+                    </dl>
+
+                    <p class="small text-body-secondary mt-3 mb-0">{{ book.summary }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header bg-transparent fw-semibold">Reviews</div>
+
+                <ul class="list-group list-group-flush demo-scroll">
+                    {% for review in reviews %}
+                        <li class="list-group-item bg-transparent">
+                            <div class="d-flex justify-content-between gap-3">
+                                <span class="fw-medium">{{ review.reviewer_name }}</span>
+                                {% include 'partial/rating.html' with rating=review.rating %}
+                            </div>
+
+                            <div class="small text-body-secondary mt-1">{{ review.body|truncatewords:24 }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent fw-semibold">More from {{ book.author.name }}</div>
+
+                <ul class="list-group list-group-flush demo-scroll">
+                    {% for related in related_by_author %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between gap-3">
+                            <a class="link-body-emphasis text-decoration-none" href="{% url 'bookstore:book_detail' related.pk %}">{{ related.title }}</a>
+                            <span class="demo-numeric text-body-secondary">${{ related.price }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent fw-semibold">More from {{ book.publisher.name }}</div>
+
+                <ul class="list-group list-group-flush demo-scroll">
+                    {% for related in related_by_publisher %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between gap-3">
+                            <a class="link-body-emphasis text-decoration-none" href="{% url 'bookstore:book_detail' related.pk %}">{{ related.title }}</a>
+                            <span class="demo-numeric text-body-secondary">{{ related.author.name }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='Rows rendered' value=books|length hint='same page, same rows' %}
+        {% include 'partial/stat_card.html' with label='Catalog value' value=totals.catalog_value hint='Sum() in the database' %}
+        {% include 'partial/stat_card.html' with label='Average rating' value=totals.rating_average hint='Avg() in the database' %}
+        {% include 'partial/stat_card.html' with label='Books counted' value=totals.tally hint='Count() in the database' %}
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+            <span class="fw-semibold">Catalog</span>
+            <span class="badge bg-success-subtle text-success-emphasis fw-normal">constant query count</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Author's publisher</th>
+                        <th>Publisher</th>
+                        <th>Categories and tags</th>
+                        <th class="text-end">Reviews</th>
+                        <th>Rating</th>
+                        <th class="text-end">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books %}
+                        {% include 'partial/book_row_optimized.html' %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

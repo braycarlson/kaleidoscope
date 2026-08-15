@@ -1,0 +1,9 @@
+<section class="demo-note border-start border-4 {{ note_border|default:'border-warning' }} rounded-end p-3 mb-4">
+    <div class="fw-semibold mb-2">{{ note_title|default:'What this page does wrong' }}</div>
+
+    <ul class="mb-0 small text-body-secondary demo-note-list">
+        {% for note in notes %}
+            <li>{{ note }}</li>
+        {% endfor %}
+    </ul>
+</section>

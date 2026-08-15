@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='Orders in table' value=total_orders hint='rows in bookstore_order' %}
+        {% include 'partial/stat_card.html' with label='Orders shown' value=orders|length hint='sliced in Python' %}
+        {% include 'partial/stat_card.html' with label='Relation depth' value='4' hint='order, item, book, author' %}
+        {% include 'partial/stat_card.html' with label='Totals' value='Python' hint='recomputed per row' %}
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+        {% for order in orders %}
+            <div class="card">
+                <div class="card-header bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fw-semibold demo-numeric">{{ order.reference }}</span>
+                        <span class="badge bg-body-secondary text-body-secondary fw-normal">{{ order.status }}</span>
+                        <span class="small text-body-secondary">{{ order.customer.name }} &middot; {{ order.customer.city }}</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 small">
+                        <span class="text-body-secondary">{{ order.placed_on }}</span>
+                        <span class="demo-numeric">{{ order.item_count }} items</span>
+                        <span class="demo-numeric fw-semibold">${{ order.total }}</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                            {% for item in order.items.all %}
+                                <tr>
+                                    <td class="fw-medium">{{ item.book.title }}</td>
+                                    <td class="text-body-secondary">{{ item.book.author.name }}</td>
+                                    <td class="text-body-secondary">{{ item.book.publisher.name }}</td>
+                                    <td class="text-end demo-numeric">{{ item.quantity }}</td>
+                                    <td class="text-end demo-numeric">${{ item.unit_price }}</td>
+                                    <td class="text-end demo-numeric">${{ item.line_total }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

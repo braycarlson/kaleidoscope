@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="mb-4">
+        {% include 'partial/ajax_probe.html' %}
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='Books' value=counts.books hint='rows in bookstore_book' %}
+        {% include 'partial/stat_card.html' with label='Authors' value=counts.authors hint='rows in bookstore_author' %}
+        {% include 'partial/stat_card.html' with label='Reviews' value=counts.reviews hint='rows in bookstore_review' %}
+        {% include 'partial/stat_card.html' with label='Orders' value=counts.orders hint='rows in bookstore_order' %}
+        {% include 'partial/stat_card.html' with label='Customers' value=counts.customers hint='rows in bookstore_customer' %}
+        {% include 'partial/stat_card.html' with label='Publishers' value=counts.publishers hint='rows in bookstore_publisher' %}
+        {% include 'partial/stat_card.html' with label='Categories' value=counts.categories hint='many-to-many' %}
+        {% include 'partial/stat_card.html' with label='Tags' value=counts.tags hint='many-to-many' %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-7">
+            <div class="card h-100">
+                <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+                    <span class="fw-semibold">Publishers</span>
+                    <span class="badge bg-danger-subtle text-danger-emphasis fw-normal">2 queries per row</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>City</th>
+                                <th>Founded</th>
+                                <th class="text-end">Authors</th>
+                                <th class="text-end">Books</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for publisher in publishers %}
+                                <tr>
+                                    <td class="fw-medium">{{ publisher.name }}</td>
+                                    <td class="text-body-secondary">{{ publisher.city }}</td>
+                                    <td class="demo-numeric text-body-secondary">{{ publisher.founded_year }}</td>
+                                    <td class="text-end demo-numeric">{{ publisher.author_count }}</td>
+                                    <td class="text-end demo-numeric">{{ publisher.book_count }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+                    <span class="fw-semibold">Latest reviews</span>
+                    <span class="badge bg-danger-subtle text-danger-emphasis fw-normal">2 queries per row</span>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    {% for review in recent_reviews %}
+                        <li class="list-group-item bg-transparent">
+                            <div class="d-flex justify-content-between gap-3">
+                                <span class="fw-medium">{{ review.book.title }}</span>
+                                {% include 'partial/rating.html' with rating=review.rating %}
+                            </div>
+
+                            <div class="small text-body-secondary">{{ review.reviewer_name }} on {{ review.book.author.name }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mt-1">
+        {% for card in tour %}
+            <div class="col">
+                <a class="card h-100 text-decoration-none demo-tour" href="{{ card.url }}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <span class="fw-semibold link-body-emphasis">{{ card.title }}</span>
+                            <span class="badge bg-body-secondary text-body-secondary fw-normal">{{ card.panel }}</span>
+                        </div>
+
+                        <p class="small text-body-secondary mb-0 mt-2">{{ card.description }}</p>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

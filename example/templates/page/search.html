@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <form class="card mb-4" method="get" action="{% url 'bookstore:search' %}">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+            <input class="form-control flex-grow-1" type="search" name="q" value="{{ term }}" placeholder="Search titles, summaries and authors">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        {% include 'partial/stat_card.html' with label='Term' value=term hint='matched with icontains' %}
+        {% include 'partial/stat_card.html' with label='Results' value=rows|length hint='deduplicated in Python' %}
+        {% include 'partial/stat_card.html' with label='Scans' value='3' hint='three unindexed LIKE queries' %}
+        {% include 'partial/stat_card.html' with label='Index used' value='None' hint='no db_index on any column' %}
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+            <span class="fw-semibold">Matches</span>
+            <span class="badge bg-danger-subtle text-danger-emphasis fw-normal">full table scan per field</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Publisher</th>
+                        <th class="text-end">Reviews</th>
+                        <th>Rating</th>
+                        <th class="text-end">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>
+                                <a class="link-body-emphasis text-decoration-none fw-medium" href="{% url 'bookstore:book_detail' row.book.pk %}">{{ row.book.title }}</a>
+                            </td>
+                            <td class="text-body-secondary">{{ row.author_name }}</td>
+                            <td class="text-body-secondary">{{ row.publisher_name }}</td>
+                            <td class="text-end demo-numeric">{{ row.review_count }}</td>
+                            <td>{% include 'partial/rating.html' with rating=row.rating %}</td>
+                            <td class="text-end demo-numeric">${{ row.book.price }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

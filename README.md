@@ -1,4 +1,8 @@
-# django-kaleidoscope
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.png">
+    <img alt="django-kaleidoscope" src="assets/logo-dark.png" width="440">
+</picture>
 
 A debug toolbar for Django.
 

@@ -1,12 +1,14 @@
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.png">
-    <img alt="django-kaleidoscope" src="assets/logo-dark.png" width="440">
-</picture>
+<div align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-light.png">
+        <img alt="django-kaleidoscope" src="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-dark.png" width="500">
+    </picture>
+</div>
 
 A debug toolbar for Django.
 
-![SQL Queries panel](example/screenshot/03-queries-n-plus-one.png)
+![SQL Queries panel](https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/example/screenshot/03-queries-n-plus-one.png)
 
 ## Overview
 

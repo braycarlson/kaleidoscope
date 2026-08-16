@@ -1,14 +1,25 @@
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-dark.svg">
-    <img alt="django-kaleidoscope" src="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-dark.svg" width="600">
-</picture>
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/kaleidoscope-lockup-full-on-dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="assets/kaleidoscope-lockup-full-on-light.svg">
+        <img alt="kaleidoscope" src="assets/kaleidoscope-lockup-full-on-light.svg" width="400">
+    </picture>
+</p>
 
 &nbsp;
 
-A debug toolbar for Django.
+<p align="center">
+    A debug toolbar for Django.
+</p>
 
-![SQL Queries panel](https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/example/screenshot/03-queries-n-plus-one.png)
+<p align="center">
+    <a href="https://github.com/braycarlson/kaleidoscope/actions/workflows/publish.yml"><img alt="publish" src="https://img.shields.io/github/actions/workflow/status/braycarlson/kaleidoscope/publish.yml?branch=main&amp;style=flat-square&amp;label=publish"></a>
+    <a href="https://pypi.org/project/django-kaleidoscope/"><img alt="pypi" src="https://img.shields.io/pypi/v/django-kaleidoscope?style=flat-square"></a>
+    <a href="https://www.python.org"><img alt="python" src="https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square"></a>
+    <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square"></a>
+</p>
+
+![SQL Queries panel](example/screenshot/03-queries-n-plus-one.png)
 
 ## Overview
 

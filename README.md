@@ -1,8 +1,8 @@
 <p align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="assets/kaleidoscope-lockup-full-on-dark.svg">
-        <source media="(prefers-color-scheme: light)" srcset="assets/kaleidoscope-lockup-full-on-light.svg">
-        <img alt="kaleidoscope" src="assets/kaleidoscope-lockup-full-on-light.svg" width="400">
+        <source media="(prefers-color-scheme: dark)" srcset="assets/kaleidoscope-wordmark-on-dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="assets/kaleidoscope-wordmark-on-light.svg">
+        <img alt="kaleidoscope" src="assets/kaleidoscope-wordmark-on-light.svg" width="400">
     </picture>
 </p>
 

@@ -1,6 +1,6 @@
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-plain-ink.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-plain-white.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-plain-white.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-plain-ink.png">
     <img alt="django-kaleidoscope" src="https://raw.githubusercontent.com/braycarlson/kaleidoscope/main/assets/logo-plain-white.png" width="600">
 </picture>
 

@@ -2,7 +2,7 @@
     <picture>
         <source media="(prefers-color-scheme: dark)" srcset="assets/kaleidoscope-wordmark-on-dark.svg">
         <source media="(prefers-color-scheme: light)" srcset="assets/kaleidoscope-wordmark-on-light.svg">
-        <img alt="kaleidoscope" src="assets/kaleidoscope-wordmark-on-light.svg" width="400">
+        <img alt="kaleidoscope" src="assets/kaleidoscope-wordmark-on-light.svg" width="500">
     </picture>
 </p>
 

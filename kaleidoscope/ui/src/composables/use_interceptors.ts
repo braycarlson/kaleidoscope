@@ -1,48 +1,65 @@
+const TOOLBAR_PREFIX = '/__kaleidoscope__';
+
+type RequestTracked = XMLHttpRequest & { _ks_url?: string };
+
+function url_of(input: RequestInfo | URL): string {
+    if (typeof input === 'string') return input;
+    if (input instanceof URL) return input.href;
+    return input.url;
+}
+
+function url_is_toolbar(url: string): boolean {
+    try {
+        return new URL(url, window.location.href).pathname.startsWith(TOOLBAR_PREFIX);
+    } catch {
+        return url.startsWith(TOOLBAR_PREFIX);
+    }
+}
+
 export function use_interceptors(on_activity: () => void): () => void {
     const open_original = XMLHttpRequest.prototype.open;
     const send_original = XMLHttpRequest.prototype.send;
-
-    XMLHttpRequest.prototype.open = function(
-        this: XMLHttpRequest & { _ks_url?: string },
-        method: string,
-        url: string | URL,
-        async_flag?: boolean,
-        username?: string | null,
-        password?: string | null,
-    ) {
-        this._ks_url = String(url);
-        return open_original.call(this, method, url, async_flag ?? true, username ?? null, password ?? null);
-    };
-
-    XMLHttpRequest.prototype.send = function(
-        this: XMLHttpRequest & { _ks_url?: string },
-        body?: Document | XMLHttpRequestBodyInit | null,
-    ) {
-        const ks_url = this._ks_url;
-
-        this.addEventListener('loadend', function() {
-            if (ks_url && !ks_url.startsWith('/__kaleidoscope__')) {
-                on_activity();
-            }
-        });
-
-        return send_original.call(this, body);
-    };
-
     const fetch_original = window.fetch;
 
-    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
-        const url = String(input);
+    function activity_report() {
+        on_activity();
+    }
 
-        if (url.startsWith('/__kaleidoscope__')) {
-            return fetch_original.call(this, input, init);
+    function open_tracked(this: RequestTracked, ...args: unknown[]) {
+        this._ks_url = String(args[1]);
+
+        (open_original as (...args: unknown[]) => void).apply(this, args);
+    }
+
+    function send_tracked(this: RequestTracked, body?: Document | XMLHttpRequestBodyInit | null) {
+        const ks_url = this._ks_url;
+
+        if (ks_url !== undefined) {
+            if (!url_is_toolbar(ks_url)) {
+                this.addEventListener('loadend', activity_report, { once: true });
+            }
         }
 
-        return fetch_original.call(this, input, init).then(function(response) {
+        send_original.call(this, body);
+    }
+
+    function fetch_tracked(input: RequestInfo | URL, init?: RequestInit) {
+        const pending = fetch_original.call(window, input, init);
+
+        if (url_is_toolbar(url_of(input))) {
+            return pending;
+        }
+
+        return pending.then(function(response) {
             on_activity();
+
             return response;
         });
-    };
+    }
+
+    XMLHttpRequest.prototype.open = open_tracked;
+    XMLHttpRequest.prototype.send = send_tracked;
+    window.fetch = fetch_tracked;
 
     return function cleanup() {
         XMLHttpRequest.prototype.open = open_original;

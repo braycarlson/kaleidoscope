@@ -1,11 +1,51 @@
 import js from '@eslint/js';
+import globals from 'globals';
 import ts from 'typescript-eslint';
 import vue from 'eslint-plugin-vue';
 
 export default ts.config(
+    {
+        ignores: ['coverage/'],
+    },
     js.configs.recommended,
-    ...ts.configs.strict,
+    ...ts.configs.strictTypeChecked,
+    ...ts.configs.stylisticTypeChecked,
     ...vue.configs['flat/recommended'],
+    {
+        languageOptions: {
+            globals: globals.browser,
+            parserOptions: {
+                extraFileExtensions: ['.vue'],
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
+        rules: {
+            'prefer-const': 'error',
+
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': ['error', {
+                argsIgnorePattern: '^_',
+            }],
+
+            '@typescript-eslint/restrict-plus-operands': ['error', {
+                allowNumberAndString: true,
+            }],
+
+            '@typescript-eslint/restrict-template-expressions': ['error', {
+                allowNumber: true,
+            }],
+
+            'vue/attribute-hyphenation': 'off',
+            'vue/html-indent': ['warn', 4],
+            'vue/max-attributes-per-line': 'off',
+            'vue/multi-word-component-names': 'off',
+            'vue/prop-name-casing': 'off',
+            'vue/require-default-prop': 'off',
+            'vue/script-indent': ['warn', 4],
+            'vue/singleline-html-element-content-newline': 'off',
+        },
+    },
     {
         files: ['src/**/*.vue'],
         languageOptions: {
@@ -22,41 +62,32 @@ export default ts.config(
         },
     },
     {
-        languageOptions: {
-            globals: {
-                clearTimeout: 'readonly',
-                console: 'readonly',
-                document: 'readonly',
-                Document: 'readonly',
-                DragEvent: 'readonly',
-                localStorage: 'readonly',
-                MouseEvent: 'readonly',
-                navigator: 'readonly',
-                RequestInfo: 'readonly',
-                RequestInit: 'readonly',
-                setTimeout: 'readonly',
-                TouchEvent: 'readonly',
-                URL: 'readonly',
-                window: 'readonly',
-                XMLHttpRequest: 'readonly',
-                XMLHttpRequestBodyInit: 'readonly',
-            },
-        },
+        files: [
+            'src/composables/use_interceptors.ts',
+            'tests/composables/use_interceptors.test.ts',
+        ],
         rules: {
-            'prefer-const': 'error',
-
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': ['error', {
-                argsIgnorePattern: '^_',
-            }],
-
-            'vue/attribute-hyphenation': 'off',
-            'vue/html-indent': ['warn', 4],
-            'vue/max-attributes-per-line': 'off',
-            'vue/multi-word-component-names': 'off',
-            'vue/prop-name-casing': 'off',
-            'vue/script-indent': ['warn', 4],
-            'vue/singleline-html-element-content-newline': 'off',
+            '@typescript-eslint/unbound-method': 'off',
+        },
+    },
+    {
+        files: ['tests/composables/use_panels.test.ts'],
+        rules: {
+            '@typescript-eslint/prefer-promise-reject-errors': 'off',
+        },
+    },
+    {
+        files: ['src/services/clipboard.ts'],
+        rules: {
+            '@typescript-eslint/no-deprecated': 'off',
+        },
+    },
+    {
+        files: ['**/*.js'],
+        ...ts.configs.disableTypeChecked,
+        languageOptions: {
+            ...ts.configs.disableTypeChecked.languageOptions,
+            globals: globals.node,
         },
     },
 );

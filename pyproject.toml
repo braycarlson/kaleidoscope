@@ -4,7 +4,7 @@ requires = ["setuptools>=77.0"]
 
 [project]
 name = "django-kaleidoscope"
-version = "0.0.11"
+version = "0.0.12"
 description = "A debug toolbar for Django."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,12 +28,14 @@ classifiers = [
     "Framework :: Django :: 5.1",
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0",
+    "Framework :: Django :: 6.1",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Debuggers",
 ]
 dependencies = [
@@ -46,7 +48,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "hypothesis>=6.120",
     "playwright",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-django>=4.9",
+    "pytest-playwright>=0.7",
+    "pytest-xdist>=3.6",
     "ruff",
     "ty",
 ]
@@ -58,6 +66,28 @@ Repository = "https://github.com/braycarlson/kaleidoscope"
 
 [tool.setuptools.packages.find]
 include = ["kaleidoscope*"]
+namespaces = false
 
 [tool.setuptools.package-data]
 kaleidoscope = ["static/kaleidoscope/**/*", "templates/*"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+django_debug_mode = "keep"
+addopts ="-m 'not e2e and not fuzz and not packaging and not simulation'"
+testpaths = ["tests"]
+norecursedirs = [".*", "build", "dist", "example", "kaleidoscope", "node_modules"]
+markers = [
+    "e2e: browser end-to-end tests against a live server",
+    "fuzz: hypothesis fuzz tests; bound examples with FUZZ_CASES",
+    "packaging: builds the wheel and inspects what it ships",
+    "simulation: deterministic simulation tests; sweep seeds with SIMULATION_SEED_COUNT, replay one with SIMULATION_SEEDS",
+]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+source = ["kaleidoscope"]

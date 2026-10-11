@@ -4,29 +4,39 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "watch": "vite build --watch",
+        "lint": "eslint .",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage",
+        "test:watch": "vitest",
         "typecheck": "vue-tsc --noEmit",
-        "lint": "eslint src/"
+        "watch": "vite build --watch"
     },
     "dependencies": {
-        "@tanstack/vue-table": "^8.21.3",
+        "@tanstack/vue-table": "^9.2.8",
         "lucide-vue-next": "^1.0.0",
-        "prismjs": "^1.29.0",
-        "sql-formatter": "^15.4.0",
-        "vue": "^3.5"
+        "prismjs": "^1.30.0",
+        "sql-formatter": "^15.9.0",
+        "vue": "^3.5.43"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@types/prismjs": "^1.26.5",
-        "@vitejs/plugin-vue": "^5",
-        "autoprefixer": "^10",
-        "eslint": "^10.2.0",
-        "eslint-plugin-vue": "^10.8.0",
-        "postcss": "^8",
-        "tailwindcss": "^3",
+        "@tailwindcss/postcss": "^4.3.3",
+        "@types/node": "^26.6.5",
+        "@types/prismjs": "^1.26.6",
+        "@vitejs/plugin-vue": "^6.0.10",
+        "@vitest/coverage-v8": "^5.0.3",
+        "@vue/test-utils": "^2.5.1",
+        "eslint": "^10.12.0",
+        "eslint-plugin-vue": "^10.11.1",
+        "fast-check": "^4.10.2",
+        "globals": "^17.13.0",
+        "jsdom": "^30.1.2",
+        "postcss": "^8.5.29",
+        "tailwindcss": "^4.3.3",
         "typescript": "^5",
-        "typescript-eslint": "^8.58.2",
-        "vite": "^6",
-        "vue-tsc": "^2"
+        "typescript-eslint": "^8.71.1",
+        "vite": "^8.3.4",
+        "vitest": "^5.0.3",
+        "vue-tsc": "^3.3.13"
     }
 }

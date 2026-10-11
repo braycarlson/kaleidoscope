@@ -5,7 +5,7 @@ import CopyButton from '../CopyButton.vue';
 import DataTable from '../DataTable.vue';
 import FilterInput from '../FilterInput.vue';
 import PanelHeader from '../PanelHeader.vue';
-import type { ColumnDef } from '@tanstack/vue-table';
+import type { TableColumn } from '../../services/table';
 
 interface CacheCall {
     _index: number;
@@ -31,7 +31,7 @@ const props = defineProps<{
 const text_filter = ref('');
 
 const calls_enriched = computed(function(): CacheCall[] {
-    return (props.data.calls || []).map(function(call, index) {
+    return props.data.calls.map(function(call, index) {
         return { ...call, _index: index };
     });
 });
@@ -49,6 +49,10 @@ const calls_filtered = computed(function(): CacheCall[] {
 });
 
 function class_method(method: string): string {
+    if (typeof method !== 'string') {
+        throw new TypeError('a cache method must be text: ' + String(method));
+    }
+
     if (method === 'GET' || method === 'GET_MANY' || method === 'GET_OR_SET' || method === 'HAS_KEY') return 'text-blue-400';
     if (method === 'SET' || method === 'SET_MANY' || method === 'ADD') return 'text-green-400';
     if (method === 'DELETE' || method === 'DELETE_MANY' || method === 'CLEAR') return 'text-red-400';
@@ -56,16 +60,16 @@ function class_method(method: string): string {
     return '';
 }
 
-const columns: ColumnDef<CacheCall, unknown>[] = [
+const columns: TableColumn<CacheCall>[] = [
     {
         accessorKey: 'alias',
         header: 'Backend',
-        meta: { headerClass: '!w-24', cellClass: 'w-24 opacity-50' },
+        meta: { headerClass: 'w-24!', cellClass: 'w-24 opacity-50' },
     },
     {
         accessorKey: 'method',
         header: 'Method',
-        meta: { headerClass: '!w-24', cellClass: 'w-24 font-semibold' },
+        meta: { headerClass: 'w-24!', cellClass: 'w-24 font-semibold' },
         cell: function(info) {
             return h('span', { class: class_method(info.getValue() as string) }, info.getValue() as string);
         },
@@ -73,23 +77,36 @@ const columns: ColumnDef<CacheCall, unknown>[] = [
     {
         accessorKey: 'duration_ms',
         header: 'Time',
-        meta: { headerClass: '!w-24 hidden sm:table-cell', cellClass: 'w-24 font-mono whitespace-nowrap hidden sm:table-cell' },
+        meta: { headerClass: 'w-24! hidden sm:table-cell', cellClass: 'w-24 font-mono whitespace-nowrap hidden sm:table-cell' },
         cell: function(info) {
             const value = info.getValue() as number;
+
+            if (!Number.isFinite(value)) {
+                throw new RangeError('a cache call duration must be a finite number: ' + value);
+            }
+
             const class_name = value >= 10 ? 'text-orange-500 font-semibold' : value >= 5 ? 'text-yellow-500' : '';
+
             return h('span', { class: class_name }, value.toFixed(2) + ' ms');
         },
     },
     {
         accessorKey: 'hit',
         header: 'Result',
-        meta: { headerClass: '!w-16 hidden sm:table-cell', cellClass: 'w-16 hidden sm:table-cell' },
+        meta: { headerClass: 'w-16! hidden sm:table-cell', cellClass: 'w-16 hidden sm:table-cell' },
         cell: function(info) {
             const row = info.row.original;
+
             if (row.method === 'SET' || row.method === 'SET_MANY' || row.method === 'DELETE' || row.method === 'DELETE_MANY' || row.method === 'CLEAR' || row.method === 'INCR' || row.method === 'ADD') {
                 return h('span', { class: 'opacity-30' }, '-');
             }
+
             const hit = info.getValue() as boolean;
+
+            if (typeof hit !== 'boolean') {
+                throw new TypeError('a cache hit must be a bool: ' + String(hit));
+            }
+
             return h('span', { class: hit ? 'text-green-500' : 'text-red-500' }, hit ? 'Hit' : 'Miss');
         },
     },
@@ -98,7 +115,13 @@ const columns: ColumnDef<CacheCall, unknown>[] = [
         header: 'Key',
         meta: { cellClass: 'font-mono overflow-hidden text-ellipsis whitespace-nowrap max-w-0' },
         cell: function(info) {
-            return h('span', { title: info.getValue() as string }, info.getValue() as string);
+            const value = info.getValue() as string;
+
+            if (typeof value !== 'string') {
+                throw new TypeError('a cache key must be text: ' + String(value));
+            }
+
+            return h('span', { title: value }, value);
         },
     },
 ];

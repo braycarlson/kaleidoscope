@@ -2,159 +2,226 @@ from __future__ import annotations
 
 import functools
 import json
-import threading
 import time
 
 from contextvars import ContextVar
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from django.http import JsonResponse
-from django.template import Template
+from django.http import HttpRequest, JsonResponse
+from django.template import Context, Template
 
-from kaleidoscope.constants import (
-    CONTEXT_DICTS_MAX,
-    CONTEXT_KEYS_MAX,
-    TEMPLATES_PER_REQUEST_MAX,
-)
+from kaleidoscope.context import KaleidoscopeContext
 from kaleidoscope.panel import Installable, Panel, RequestHook, ResponseHook
-from kaleidoscope.serializer import Serializer
+from kaleidoscope.patch import is_patched, method_patch, method_unpatch, patch_marked
+from kaleidoscope.serializer import resolve_path, serialize
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
+    from typing import Callable
 
-    from kaleidoscope.context import KaleidoscopeContext
+    from django.http import HttpResponse
 
 
-_collecting: ContextVar[list | None] = ContextVar('_template_collecting', default=None)
+CONTEXT_DICTS_MAX = 256
+CONTEXT_KEYS_MAX = 1_024
+TEMPLATE_NAME_INLINE = '<inline>'
+TEMPLATE_VALUE_PATH_LENGTH_MAX = 8_192
+TEMPLATE_VALUE_STEPS_MAX = 64
+TEMPLATES_PER_REQUEST_MAX = 2_048
+_KEYS_RESERVED = frozenset({'True', 'False', 'None'})
+_collecting: ContextVar[list[TemplateRender] | None] = ContextVar(
+    '_template_collecting',
+    default=None,
+)
+
+_depth: ContextVar[int] = ContextVar('_template_depth', default=0)
+
+
+@dataclass(slots=True)
+class TemplateRender:
+    context: dict[str, object]
+    depth: int
+    duration_ms: float
+    name: str
+
+    def listed(self) -> dict:
+        return {
+            'context_keys': sorted(self.context),
+            'duration_ms': self.duration_ms,
+            'name': self.name,
+        }
+
+
+def _context_dicts(context: object) -> list:
+    if isinstance(context, Context):
+        return list(context.dicts)[:CONTEXT_DICTS_MAX]
+
+    if isinstance(context, dict):
+        return [context]
+
+    return []
+
+
+def _context_items(context: object) -> dict[str, object]:
+    items: dict[str, object] = {}
+
+    for entry in _context_dicts(context):
+        if not isinstance(entry, dict):
+            continue
+
+        for key, value in entry.items():
+            if len(items) >= CONTEXT_KEYS_MAX:
+                return items
+
+            if not isinstance(key, str):
+                continue
+
+            if key.startswith('_'):
+                continue
+
+            if key in _KEYS_RESERVED:
+                continue
+
+            items[key] = value
+
+    return items
+
+
+def _render_timed(
+    original: Callable,
+    template: Template,
+    context: Context,
+    *,
+    renders: list[TemplateRender],
+) -> str:
+    try:
+        items = _context_items(context)
+    except Exception:
+        items = {}
+
+    name = getattr(template, 'name', None) or TEMPLATE_NAME_INLINE
+    render = TemplateRender(context=items, depth=_depth.get(), duration_ms=0.0, name=name)
+
+    renders.append(render)
+    token = _depth.set(render.depth + 1)
+    started_ns = time.perf_counter_ns()
+
+    try:
+        result = original(template, context)
+    finally:
+        render.duration_ms = round((time.perf_counter_ns() - started_ns) / 1_000_000, 2)
+
+        _depth.reset(token)
+
+    return result
+
+
+def _render_wrapper_build(original: Callable) -> Callable:
+    if not callable(original):
+        message = f'original must be callable, not {type(original).__name__}'
+        raise TypeError(message)
+
+    if is_patched(original):
+        message = 'Template._render is already wrapped by kaleidoscope'
+        raise RuntimeError(message)
+
+    @functools.wraps(original)
+    def render_tracked(template: Template, context: Context) -> str:
+        renders = _collecting.get(None)
+
+        if renders is None:
+            return original(template, context)
+
+        if len(renders) >= TEMPLATES_PER_REQUEST_MAX:
+            return original(template, context)
+
+        return _render_timed(original, template, context, renders=renders)
+
+    return patch_marked(render_tracked)
+
+
+def _value_steps(request: HttpRequest) -> list | None:
+    try:
+        steps = json.loads(request.GET.get('path', '[]'))
+    except (RecursionError, TypeError, ValueError):
+        return None
+
+    if not isinstance(steps, list):
+        return None
+
+    return steps
 
 
 class TemplatesPanel(Panel, Installable, RequestHook, ResponseHook):
     panel_id = 'templates'
     title = 'Templates'
 
-    _original_render = Template.render
-
     def __init__(self) -> None:
         super().__init__()
 
+        self._contexts: list[dict] = []
         self._data: dict = {}
-        self._context_raw: list[dict] = []
-        self._lock = threading.Lock()
-        self._serializer = Serializer()
 
-    def _collect_context(self, context: object) -> tuple[dict, list[str]]:
-        items: dict[str, object] = {}
+    def _value_respond(self, request: HttpRequest) -> HttpResponse:
+        if not isinstance(request, HttpRequest):
+            message = f'{self.title} needs an HttpRequest, not {type(request).__name__}'
+            raise TypeError(message)
 
-        if hasattr(context, 'dicts'):
-            try:
-                dict_list = list(context.dicts)[:CONTEXT_DICTS_MAX]  # ty:ignore[not-iterable]
-            except Exception:
-                dict_list = []
-        elif isinstance(context, dict):
-            dict_list = [context]
-        else:
-            dict_list = []
+        if len(request.GET.get('path', '')) > TEMPLATE_VALUE_PATH_LENGTH_MAX:
+            return JsonResponse({'error': 'path too long'}, status=400)
 
-        for dict_entry in dict_list:
-            if not isinstance(dict_entry, dict):
-                continue
+        steps = _value_steps(request)
 
-            for key, value in dict_entry.items():
-                if not isinstance(key, str):
-                    continue
+        if steps is None:
+            return JsonResponse({'error': 'invalid params'}, status=400)
 
-                if key.startswith('_'):
-                    continue
+        if len(steps) > TEMPLATE_VALUE_STEPS_MAX:
+            return JsonResponse({'error': 'path too deep'}, status=400)
 
-                if key in ('True', 'False', 'None'):
-                    continue
+        try:
+            template_index = int(request.GET.get('template', '-1'))
+        except ValueError:
+            return JsonResponse({'error': 'invalid params'}, status=400)
 
-                items[key] = value
+        contexts = self._contexts
 
-                if len(items) >= CONTEXT_KEYS_MAX:
-                    break
+        if template_index < 0:
+            return JsonResponse({'error': 'template not found'}, status=404)
 
-            if len(items) >= CONTEXT_KEYS_MAX:
-                break
+        if template_index >= len(contexts):
+            return JsonResponse({'error': 'template not found'}, status=404)
 
-        return items, sorted(items.keys())
+        try:
+            value = resolve_path(contexts[template_index], steps)
+        except Exception as exception:
+            return JsonResponse({'error': str(exception)}, status=400)
 
-    def install(self) -> None:
-        panel = self
-        original = TemplatesPanel._original_render
-
-        @functools.wraps(original)
-        def patched_render(template_self: Template, context: object) -> str:
-            templates = _collecting.get(None)
-
-            if templates is None:
-                return original(template_self, context)
-
-            start = time.perf_counter_ns()
-            result = original(template_self, context)
-            duration = (time.perf_counter_ns() - start) / 1_000_000
-
-            name = getattr(template_self, 'name', None) or '<inline>'
-
-            if len(templates) < TEMPLATES_PER_REQUEST_MAX:
-                try:
-                    merged, keys = panel._collect_context(context)
-                except Exception:
-                    merged, keys = {}, []
-
-                templates.append({
-                    'context_keys': keys,
-                    'duration_ms': round(duration, 2),
-                    'name': name,
-                    '_merged': merged,
-                })
-
-            return result
-
-        Template.render = patched_render  # ty:ignore[invalid-assignment]
-
-    def uninstall(self) -> None:
-        Template.render = TemplatesPanel._original_render
+        return JsonResponse({'value': serialize(value)})
 
     def get_data(self) -> dict:
-        with self._lock:
-            return dict(self._data)
+        return dict(self._data)
 
     def get_summary(self) -> str:
-        with self._lock:
-            count = self._data.get('count', 0)
-            total_time = self._data.get('total_time', 0)
+        data = self._data
+        count = data.get('count', 0)
 
         if count:
-            return f'{count} templates, {total_time} ms'
+            return f'{count} templates, {data.get("total_time", 0)} ms'
 
         return ''
 
     def handle_action(self, action: str, request: HttpRequest) -> HttpResponse | None:
-        if action == 'value':
-            try:
-                template_index = int(request.GET.get('template', '-1'))
-                steps = json.loads(request.GET.get('path', '[]'))
-            except (ValueError, TypeError):
-                return JsonResponse({'error': 'invalid params'}, status=400)
+        if not isinstance(action, str):
+            message = f'action must be text: {action!r}'
+            raise TypeError(message)
 
-            if not isinstance(steps, list):
-                return JsonResponse({'error': 'invalid path'}, status=400)
+        if action != 'value':
+            return None
 
-            with self._lock:
-                if template_index < 0 or template_index >= len(self._context_raw):
-                    return JsonResponse({'error': 'template not found'}, status=404)
+        return self._value_respond(request)
 
-                context_raw = self._context_raw[template_index]
-
-            try:
-                value = self._serializer.resolve_path(context_raw, steps)
-            except Exception as exception:
-                return JsonResponse({'error': str(exception)}, status=400)
-
-            return JsonResponse({'value': self._serializer.serialize(value)})
-
-        return None
+    def install(self) -> None:
+        method_patch(Template, '_render', _render_wrapper_build)
 
     def process_request(self, request: HttpRequest, context: KaleidoscopeContext) -> None:
         _ = request
@@ -171,26 +238,29 @@ class TemplatesPanel(Panel, Installable, RequestHook, ResponseHook):
         _ = request
         _ = response
 
-        templates_raw = _collecting.get(None) or []
+        if not isinstance(context, KaleidoscopeContext):
+            message = f'{self.title} needs a KaleidoscopeContext, not {type(context).__name__}'
+            raise TypeError(message)
+
+        renders = _collecting.get(None) or []
+
         _collecting.set(None)
+
+        if len(renders) > TEMPLATES_PER_REQUEST_MAX:
+            message = f'{self.title} holds {len(renders)} renders, over {TEMPLATES_PER_REQUEST_MAX}'
+            raise RuntimeError(message)
 
         if context.is_ajax:
             return
 
-        total_time = sum(template['duration_ms'] for template in templates_raw)
+        self._contexts = [render.context for render in renders]
+        durations_outermost = [render.duration_ms for render in renders if render.depth == 0]
 
-        templates_public = []
-        context_raw_list = []
+        self._data = {
+            'count': len(renders),
+            'templates': [render.listed() for render in renders],
+            'total_time': round(sum(durations_outermost), 2),
+        }
 
-        for template in templates_raw:
-            merged = template.pop('_merged', {})
-            templates_public.append(template)
-            context_raw_list.append(merged)
-
-        with self._lock:
-            self._data = {
-                'count': len(templates_public),
-                'templates': templates_public,
-                'total_time': round(total_time, 2),
-            }
-            self._context_raw = context_raw_list
+    def uninstall(self) -> None:
+        method_unpatch(Template, '_render')

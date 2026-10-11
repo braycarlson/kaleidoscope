@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import threading
 import time
 
 from typing import TYPE_CHECKING
 
-from kaleidoscope.constants import StateKey
-from kaleidoscope.panel import Panel, RequestHook, ResponseHook, ServerTimingMetric
+from django.http import HttpRequest, HttpResponseBase
+
+from kaleidoscope.context import KaleidoscopeContext
+from kaleidoscope.panel import Panel, ResponseHook, ServerTimingMetric
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
-
-    from kaleidoscope.context import KaleidoscopeContext
+    from django.http import HttpResponse
 
 
-class TimerPanel(Panel, RequestHook, ResponseHook):
+class TimerPanel(Panel, ResponseHook):
     panel_id = 'timer'
     title = 'Timer'
 
@@ -22,34 +21,34 @@ class TimerPanel(Panel, RequestHook, ResponseHook):
         super().__init__()
 
         self._data: dict = {}
-        self._lock = threading.Lock()
 
     def get_data(self) -> dict:
-        with self._lock:
-            return dict(self._data)
+        return dict(self._data)
 
-    def get_server_timing(self) -> list[ServerTimingMetric]:
-        with self._lock:
-            total = self._data.get('total_ms', 0)
+    def get_server_timing(self, context: KaleidoscopeContext) -> list[ServerTimingMetric]:
+        if not isinstance(context, KaleidoscopeContext):
+            message = f'{self.title} needs a KaleidoscopeContext, not {type(context).__name__}'
+            raise TypeError(message)
 
-        if total:
-            return [ServerTimingMetric(key='total', description='Total', duration=total)]
+        duration_ms = context.state.get(self.panel_id)
 
-        return []
+        if duration_ms is None:
+            return []
+
+        if duration_ms < 0:
+            message = f'{self.title} measured a negative duration: {duration_ms}'
+            raise RuntimeError(message)
+
+        return [ServerTimingMetric(key='total', description='Total', duration=duration_ms)]
 
     def get_summary(self) -> str:
-        with self._lock:
-            total = self._data.get('total_ms', 0)
-            method = self._data.get('method', '')
+        data = self._data
+        duration_ms = data.get('total_ms', 0)
 
-        if total:
-            return f'{method} {total:.0f} ms'
+        if duration_ms:
+            return f'{data.get("method", "")} {duration_ms:.0f} ms'
 
         return ''
-
-    def process_request(self, request: HttpRequest, context: KaleidoscopeContext) -> None:
-        _ = request
-        context.state[StateKey.TIMER_START] = time.perf_counter_ns()
 
     def process_response(
         self,
@@ -57,24 +56,34 @@ class TimerPanel(Panel, RequestHook, ResponseHook):
         response: HttpResponse,
         context: KaleidoscopeContext,
     ) -> None:
+        if not isinstance(request, HttpRequest):
+            message = f'{self.title} needs an HttpRequest, not {type(request).__name__}'
+            raise TypeError(message)
+
+        if not isinstance(response, HttpResponseBase):
+            message = f'{self.title} needs an HttpResponse, not {type(response).__name__}'
+            raise TypeError(message)
+
+        if not isinstance(context, KaleidoscopeContext):
+            message = f'{self.title} needs a KaleidoscopeContext, not {type(context).__name__}'
+            raise TypeError(message)
+
+        duration_ms = round((time.perf_counter_ns() - context.started_ns) / 1_000_000, 2)
+
+        if duration_ms < 0:
+            message = f'{self.title} measured a negative duration: {duration_ms}'
+            raise RuntimeError(message)
+
+        context.state[self.panel_id] = duration_ms
+
         if context.is_ajax:
             return
 
-        start = context.state.get(StateKey.TIMER_START)
-
-        if start is None:
-            return
-
-        total = (time.perf_counter_ns() - start) / 1_000_000
-
-        data = {
+        self._data = {
             'asgi': context.asgi,
             'content_type': response.get('Content-Type', ''),
             'method': request.method,
             'path': request.get_full_path(),
             'status_code': response.status_code,
-            'total_ms': round(total, 2),
+            'total_ms': duration_ms,
         }
-
-        with self._lock:
-            self._data = data

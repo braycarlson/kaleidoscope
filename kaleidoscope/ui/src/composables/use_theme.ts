@@ -1,31 +1,21 @@
 import { ref } from 'vue';
+import { storage_read, storage_write } from '../services/storage';
 
 export type Theme = 'dark' | 'light';
 
 const STORAGE_KEY = 'ks-theme';
-
 const theme = ref<Theme>(load_theme());
 
 function load_theme(): Theme {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = storage_read(STORAGE_KEY);
 
-        if (stored === 'dark' || stored === 'light') {
-            return stored;
-        }
-    } catch {
-        // localStorage unavailable
-    }
-
+    if (stored === 'dark') return stored;
+    if (stored === 'light') return stored;
     return 'dark';
 }
 
 function save_theme(value: Theme) {
-    try {
-        localStorage.setItem(STORAGE_KEY, value);
-    } catch {
-        // localStorage unavailable
-    }
+    void storage_write(STORAGE_KEY, value);
 }
 
 export function use_theme() {

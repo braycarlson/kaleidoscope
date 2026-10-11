@@ -6,15 +6,12 @@ import type { CopyFormat, CopyValue } from '../types';
 
 const props = withDefaults(defineProps<{
     title: string;
-    count?: number;
+    count?: number | undefined;
     open?: boolean;
-    value_copy?: CopyValue | null;
-    format_copy?: CopyFormat;
+    value_copy?: CopyValue | undefined;
+    format_copy?: CopyFormat | undefined;
 }>(), {
-    count: -1,
     open: true,
-    value_copy: null,
-    format_copy: undefined,
 });
 
 const is_open = ref(props.open);
@@ -37,10 +34,10 @@ function toggle() {
                     :class="is_open ? 'rotate-90' : ''"
                 />
                 {{ title }}
-                <span v-if="count >= 0" class="opacity-30 font-normal">({{ count }})</span>
+                <span v-if="count !== undefined" class="opacity-30 font-normal">({{ count }})</span>
             </div>
             <CopyButton
-                v-if="value_copy !== null"
+                v-if="value_copy !== undefined"
                 :value="value_copy"
                 :format="format_copy"
             />

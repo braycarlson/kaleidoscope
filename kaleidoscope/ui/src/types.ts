@@ -1,13 +1,9 @@
 import type { Component } from 'vue';
 
 export type KaleidoscopeState = 'collapsed' | 'strip' | 'panel';
-
 export type SortDirection = 'asc' | 'desc';
-
 export type CopyFormat = 'table' | 'json' | 'text';
-
 export type CopyValue = string | object;
-
 export type KaleidoscopeSide = 'left' | 'right';
 
 export interface PanelMeta {
@@ -24,6 +20,12 @@ export interface StackFrame {
     file: string;
     function: string;
     line: number;
+    text: string;
+}
+
+export interface TemplateFrame {
+    line: number;
+    name: string;
     text: string;
 }
 

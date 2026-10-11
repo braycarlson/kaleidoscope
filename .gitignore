@@ -36,6 +36,7 @@ Thumbs.db
 
 # Testing / Coverage
 .coverage
+coverage/
 htmlcov/
 .pytest_cache/
 .tox/
@@ -44,6 +45,7 @@ htmlcov/
 # Linting / Type checking
 .ruff_cache/
 .mypy_cache/
+.tigerstyle_cache/
 .ty/
 
 # Misc

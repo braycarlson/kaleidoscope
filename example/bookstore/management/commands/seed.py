@@ -31,41 +31,40 @@ ORDER_COUNT = 260
 ORDER_ITEM_COUNT = 800
 PUBLISHER_COUNT = 18
 REVIEW_COUNT = 1_400
-
 BATCH_SIZE = 500
 SEED = 1337
 
-ADJECTIVES = [
+ADJECTIVES = (
     'Amber', 'Ancient', 'Bitter', 'Bright', 'Broken', 'Crimson', 'Distant', 'Electric', 'Empty',
     'Endless', 'Frozen', 'Gilded', 'Glass', 'Golden', 'Hollow', 'Hidden', 'Iron', 'Lonely',
     'Northern', 'Patient', 'Quiet', 'Restless', 'Salt', 'Silent', 'Silver', 'Slow', 'Stubborn',
     'Sudden', 'Tender', 'Velvet', 'Wandering', 'Winter'
-]
+)
 
-CATEGORY_NAMES = [
+CATEGORY_NAMES = (
     'Biography', 'Essays', 'Fantasy', 'History', 'Horror', 'Literary Fiction', 'Mystery',
     'Philosophy', 'Poetry', 'Science', 'Science Fiction', 'Travel'
-]
+)
 
-CITIES = [
+CITIES = (
     'Aarhus', 'Bergen', 'Bristol', 'Calgary', 'Dunedin', 'Edinburgh', 'Ghent', 'Halifax', 'Kyoto',
     'Lisbon', 'Ljubljana', 'Montreal', 'Porto', 'Reykjavik', 'Tallinn', 'Trieste', 'Utrecht',
     'Valparaiso', 'Victoria', 'Wellington'
-]
+)
 
-COUNTRIES = [
+COUNTRIES = (
     'Australia', 'Belgium', 'Canada', 'Chile', 'Denmark', 'Estonia', 'Iceland', 'Italy', 'Japan',
     'Netherlands', 'New Zealand', 'Norway', 'Portugal', 'Slovenia', 'United Kingdom'
-]
+)
 
-NOUNS = [
+NOUNS = (
     'Anchor', 'Archive', 'Atlas', 'Bell', 'Cartographer', 'Chorus', 'Compass', 'Corridor',
     'Engine', 'Garden', 'Harbour', 'Inventory', 'Lantern', 'Ledger', 'Lighthouse', 'Machine',
     'Meridian', 'Observatory', 'Orchard', 'Parallel', 'Quarry', 'Register', 'Rehearsal', 'Signal',
     'Station', 'Telegram', 'Threshold', 'Tide', 'Vault', 'Window'
-]
+)
 
-PROSE = [
+PROSE = (
     'The catalogue was never meant to be read in order.',
     'Every record here carries the residue of the hand that filed it.',
     'A shelf is an argument about what deserves to be remembered.',
@@ -76,28 +75,28 @@ PROSE = [
     'Errors propagate faster than corrections in any catalogue.',
     'The binding outlives the argument it was made to protect.',
     'Provenance is the only field nobody fills in honestly.'
-]
+)
 
-STATUSES = ['cancelled', 'delivered', 'packed', 'pending', 'refunded', 'shipped']
+STATUSES = ('cancelled', 'delivered', 'packed', 'pending', 'refunded', 'shipped')
 
-SURNAMES = [
+SURNAMES = (
     'Abendroth', 'Baranov', 'Calloway', 'Delacroix', 'Eberhardt', 'Falkner', 'Grimaldi',
     'Havelock', 'Ingersoll', 'Jarnefelt', 'Kowalski', 'Lindqvist', 'Marchetti', 'Nakamura',
     'Ostrowski', 'Pemberton', 'Quintero', 'Rasmussen', 'Solberg', 'Thackeray', 'Ueda',
     'Vasquez', 'Whitlock', 'Yarnell', 'Zabriskie'
-]
+)
 
-TAG_NAMES = [
+TAG_NAMES = (
     'award-winner', 'backlist', 'bestseller', 'boxed-set', 'debut', 'ebook', 'first-edition',
     'gift', 'hardcover', 'illustrated', 'large-print', 'new-release', 'paperback', 'reissue',
     'signed', 'staff-pick', 'translated', 'unabridged'
-]
+)
 
-FIRST_NAMES = [
+GIVEN_NAMES = (
     'Adela', 'Bram', 'Cassia', 'Dermot', 'Elke', 'Fenna', 'Goran', 'Hazel', 'Ines', 'Joris',
     'Kaisa', 'Lior', 'Mirren', 'Nils', 'Odile', 'Piet', 'Rasha', 'Soren', 'Tova', 'Ulla',
     'Vesna', 'Wren', 'Yannick', 'Zofia'
-]
+)
 
 
 class Command(BaseCommand):
@@ -111,7 +110,7 @@ class Command(BaseCommand):
         authors = []
 
         for index in range(AUTHOR_COUNT):
-            name = f'{generator.choice(FIRST_NAMES)} {generator.choice(SURNAMES)}'
+            name = f'{generator.choice(GIVEN_NAMES)} {generator.choice(SURNAMES)}'
 
             author = Author(
                 biography=self._prose_built(generator, 9),
@@ -171,7 +170,7 @@ class Command(BaseCommand):
         customers = []
 
         for index in range(CUSTOMER_COUNT):
-            name = f'{generator.choice(FIRST_NAMES)} {generator.choice(SURNAMES)}'
+            name = f'{generator.choice(GIVEN_NAMES)} {generator.choice(SURNAMES)}'
 
             customer = Customer(
                 city=generator.choice(CITIES),
@@ -207,17 +206,18 @@ class Command(BaseCommand):
     ) -> None:
         category_links = []
         tag_links = []
-
         category_model = Book.categories.through
         tag_model = Book.tags.through
 
         for book in books:
             for category in generator.sample(categories, generator.randint(1, 3)):
                 link = category_model(book_id=book.pk, category_id=category.pk)
+
                 category_links.append(link)
 
             for tag in generator.sample(tags, generator.randint(2, 4)):
                 link = tag_model(book_id=book.pk, tag_id=tag.pk)
+
                 tag_links.append(link)
 
         category_model.objects.bulk_create(category_links, batch_size=BATCH_SIZE)
@@ -288,7 +288,7 @@ class Command(BaseCommand):
         reviews = []
 
         for _ in range(REVIEW_COUNT):
-            name = f'{generator.choice(FIRST_NAMES)} {generator.choice(SURNAMES)}'
+            name = f'{generator.choice(GIVEN_NAMES)} {generator.choice(SURNAMES)}'
 
             review = Review(
                 body=self._prose_built(generator, 6),
@@ -307,6 +307,7 @@ class Command(BaseCommand):
 
         for name in TAG_NAMES:
             tag = Tag(name=name, slug=name)
+
             tags.append(tag)
 
         return Tag.objects.bulk_create(tags, batch_size=BATCH_SIZE)
@@ -348,7 +349,6 @@ class Command(BaseCommand):
         categories = self._categories_created(generator)
         publishers = self._publishers_created(generator)
         tags = self._tags_created()
-
         authors = self._authors_created(generator, publishers)
         books = self._books_created(generator, authors, publishers)
         customers = self._customers_created(generator)

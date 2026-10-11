@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import CollapsibleSection from '../CollapsibleSection.vue';
 import DataTable from '../DataTable.vue';
 import PanelHeader from '../PanelHeader.vue';
-import type { ColumnDef } from '@tanstack/vue-table';
+import type { TableColumn } from '../../services/table';
 
 interface TimerRow {
     field: string;
@@ -11,37 +11,50 @@ interface TimerRow {
 }
 
 interface TimerPanelData {
-    asgi: boolean;
-    content_type: string;
-    method: string;
-    path: string;
-    status_code: number;
-    total_ms: number;
+    asgi?: boolean;
+    content_type?: string;
+    method?: string;
+    path?: string;
+    status_code?: number;
+    total_ms?: number;
 }
 
 const props = defineProps<{
     data: TimerPanelData;
 }>();
 
+const stats = computed(function() {
+    if (props.data.total_ms === undefined) return [];
+
+    if (!Number.isFinite(props.data.total_ms)) {
+        throw new RangeError('a request time must be a finite number: ' + props.data.total_ms);
+    }
+
+    return [
+        { label: 'Total', value: props.data.total_ms + ' ms' },
+        { label: 'Status', value: props.data.status_code ?? '' },
+    ];
+});
+
 const rows = computed(function(): TimerRow[] {
-    if (!props.data.total_ms) return [];
+    if (props.data.total_ms === undefined) return [];
 
     return [
         { field: 'Server', value: props.data.asgi ? 'ASGI' : 'WSGI' },
-        { field: 'Method', value: props.data.method },
-        { field: 'Path', value: props.data.path },
-        { field: 'Status Code', value: props.data.status_code },
-        { field: 'Content Type', value: props.data.content_type },
+        { field: 'Method', value: props.data.method ?? '' },
+        { field: 'Path', value: props.data.path ?? '' },
+        { field: 'Status Code', value: props.data.status_code ?? '' },
+        { field: 'Content Type', value: props.data.content_type ?? '' },
         { field: 'Total Time', value: props.data.total_ms + ' ms' },
     ];
 });
 
-const columns: ColumnDef<TimerRow, unknown>[] = [
+const columns: TableColumn<TimerRow>[] = [
     {
         accessorKey: 'field',
         header: 'Field',
         enableSorting: false,
-        meta: { headerClass: '!w-32 sm:!w-48', cellClass: 'w-32 sm:w-48 opacity-50 font-semibold' },
+        meta: { headerClass: 'w-32! sm:w-48!', cellClass: 'w-32 sm:w-48 opacity-50 font-semibold' },
     },
     {
         accessorKey: 'value',
@@ -54,12 +67,7 @@ const columns: ColumnDef<TimerRow, unknown>[] = [
 
 <template>
     <div>
-        <PanelHeader
-            :stats="[
-                { label: 'Total', value: data.total_ms + ' ms' },
-                { label: 'Status', value: data.status_code },
-            ]"
-        />
+        <PanelHeader :stats="stats" />
 
         <CollapsibleSection
             v-if="rows.length"

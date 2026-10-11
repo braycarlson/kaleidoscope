@@ -1,4 +1,4 @@
 from kaleidoscope.middleware import KaleidoscopeMiddleware
 
 
-__all__ = ['KaleidoscopeMiddleware']
+__all__ = ('KaleidoscopeMiddleware',)

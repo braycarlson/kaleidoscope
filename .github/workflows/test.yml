@@ -1,0 +1,118 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  python:
+    name: Python ${{ matrix.python }}, Django ${{ matrix.django }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.11'
+            django: '4.2'
+          - python: '3.12'
+            django: '5.2'
+          - python: '3.13'
+            django: '6.0'
+            coverage: '--cov=kaleidoscope'
+          - python: '3.14'
+            django: '6.1'
+    env:
+      FUZZ_CASES: '200'
+      SIMULATION_SEED_COUNT: '8'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+
+      - name: Install
+        run: |
+          uv venv --python ${{ matrix.python }} .venv
+          uv pip install --python .venv/bin/python -e ".[dev]" "django~=${{ matrix.django }}.0"
+
+      - name: Lint
+        run: |
+          .venv/bin/python -m ruff check .
+          .venv/bin/ty check kaleidoscope
+
+      - name: Unit
+        run: .venv/bin/python -m pytest ${{ matrix.coverage }}
+
+      - name: Fuzz
+        run: .venv/bin/python -m pytest -m fuzz
+
+      - name: Simulation
+        run: .venv/bin/python -m pytest -m simulation
+
+  packaging:
+    name: Packaging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+
+      - name: Install
+        run: |
+          bun install --cwd kaleidoscope/ui --frozen-lockfile
+          uv venv --python 3.13 .venv
+          uv pip install --python .venv/bin/python -e ".[dev]"
+
+      - name: Packaging
+        run: .venv/bin/python -m pytest -m packaging
+
+  ui:
+    name: UI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kaleidoscope/ui
+    env:
+      FUZZ_CASES: '500'
+      SIMULATION_SEED_COUNT: '8'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test:coverage
+
+      - name: Bundle matches the source
+        run: |
+          bun run build
+          git diff --exit-code -- ../static
+
+  e2e:
+    name: End to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+
+      - name: Install
+        run: |
+          uv venv --python 3.13 .venv
+          uv pip install --python .venv/bin/python -e ".[dev]"
+          .venv/bin/python -m playwright install --with-deps chromium
+
+      - name: End to end
+        run: .venv/bin/python -m pytest -m e2e

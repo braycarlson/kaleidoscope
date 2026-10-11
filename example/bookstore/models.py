@@ -28,8 +28,7 @@ class Author(models.Model):
         ratings = []
 
         for book in self.books.all():
-            for review in book.reviews.all():
-                ratings.append(review.rating)
+            ratings.extend(review.rating for review in book.reviews.all())
 
         if not ratings:
             return 0.0

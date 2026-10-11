@@ -61,11 +61,10 @@ The middleware belongs after `GZipMiddleware`. A compressed response carries a `
 |---------|-------------|---------|
 | `INTERNAL_IPS` | The addresses that see the toolbar while `DEBUG` is on. | `[]` |
 | `KALEIDOSCOPE_IGNORE_PATHS` | The path prefixes the middleware skips. | `[]` |
-| `KALEIDOSCOPE_PANELS` | The dotted paths of the panels to load. The load order is the strip's default order. | The twelve defaults |
+| `KALEIDOSCOPE_PANELS` | The dotted paths of the panels to load, at most 64. The load order is the strip's default order. | The twelve defaults |
 | `KALEIDOSCOPE_SHOW_CALLBACK` | A dotted path to a callable taking the request, replacing the `DEBUG` and `INTERNAL_IPS` check. It may be sync or async, and is adapted to whichever the request needs. | `None` |
-| `X_FRAME_OPTIONS` | The value must be `'SAMEORIGIN'` for the profiling panel. The Django default of `'DENY'` blocks the panel's iframe and it renders blank. | `'DENY'` |
 
-There are six system checks at startup, reporting a missing middleware, a middleware registered twice, a middleware ordered before `GZipMiddleware`, an empty `INTERNAL_IPS` with no callback, a panel path that will not import, and a panel that is not a `Panel` subclass.
+There are eight system checks at startup, reporting a missing middleware, a middleware registered twice, a middleware ordered before `GZipMiddleware`, an empty `INTERNAL_IPS` with no callback, a panel path that will not import, a panel that is not a `Panel` subclass, a `KALEIDOSCOPE_PANELS` that is not a list, and a `KALEIDOSCOPE_IGNORE_PATHS` that is not a list of path prefixes.
 
 ## Panels
 
@@ -73,32 +72,18 @@ There are six system checks at startup, reporting a missing middleware, a middle
 |-------|-------------|----------|
 | Timer | The wall time for the request, with its method, path, status, and whether it ran under ASGI. | |
 | Versions | The versions of the installed packages. | |
-| Request | The method, path, headers, cookies, GET and POST data, and the resolver match. | |
-| SQL Queries | Each statement with its time, parameters, and stack, grouped into duplicates and N+1 candidates. | |
-| Templates | Each `Template.render` call with its duration and serialized context variables. | |
+| Request | The method, path, headers, cookies, GET and POST data, the resolver match, the session, the user, and each permission check. | |
+| SQL Queries | Each statement with its time, parameters, stack, and template lines, grouped into duplicates and N+1 candidates, with its query plan on request. | |
+| Templates | Each template rendered, including `{% extends %}` parents and `{% include %}` templates, with its duration and context. | |
 | Cache | Each `add`, `clear`, `delete`, `delete_many`, `get`, `get_many`, `get_or_set`, `has_key`, `incr`, `set`, and `set_many` call with its key, result, and time. | |
 | Static Files | The files referenced by the response, against each file the finders can see. | |
-| Signals | The built-in Django signals and the receivers connected to each one. | |
+| Signals | Each signal the request sent with its sender, receivers, time, and call site, and the receivers connected to each signal. | |
 | Settings | The resolved settings for the project. | |
 | Memory | The heap difference across the request by type, split into allocated, freed, and unchanged. | Yes |
 | Profiling | A pyinstrument call stack, rendered inline and openable in its own tab. | Yes |
 | Line Profiler | The per-line hits, time, and share of total for the resolved view. | Yes |
 
 The panels are toggled at runtime from the strip, which persists the panel order, side, active panel, and collapsed state in `localStorage`.
-
-## How It Works
-
-Each statement passes through a `connection.execute_wrapper` that records the SQL, its parameters, its duration in nanoseconds, and the stack that issued it with `site-packages` and kaleidoscope's own frames removed. A repeated statement is counted as a duplicate. The statements that differ only in their literals are normalized with sqlparse and grouped, which collapses a sixty-row page into one row reading `×460`.
-
-A page request clears the store and opens a group, and each XHR that follows lands in that same group, so a page and the requests it fires are read together instead of one at a time. The page and AJAX tracking toggle separately.
-
-The memory, profiling, and line profiler panels declare `isolate`. An enabled isolated panel suspends the others for that request: a pyinstrument sample is worth little while the SQL panel is walking a stack trace on each execute, so the measurement runs alone. The line profiler resolves the view through the URL resolver, unwraps decorator chains up to 32 deep, and adds the matching method and `dispatch` for class-based views.
-
-The response injector accepts only `text/html` and `application/xhtml+xml` responses with a 2xx status, no `Content-Encoding`, and a body under 10 MB, splicing the shell before the final `</body>`. A streaming response is left alone. The CSP nonce comes from `django.middleware.csp.get_nonce` on Django 6 and is copied onto the injected script, falling back to `request._csp_nonce` and `request.csp_nonce` on older versions.
-
-Each collector is bounded at 10,000 queries per request, 200 requests retained, 2,048 template renders, 50,000 cache calls, and 256 stack frames, so a runaway view degrades the panel rather than the process.
-
-Each enabled panel also writes to the `Server-Timing` header, which puts panel totals in the network tab without opening the toolbar. The response carries `X-Kaleidoscope-Request-Id` for matching a request to its captured data.
 
 ## Example Project
 

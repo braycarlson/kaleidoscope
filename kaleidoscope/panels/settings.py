@@ -1,19 +1,74 @@
 from __future__ import annotations
 
 import json
-import threading
+import warnings
 
-from kaleidoscope.constants import SETTINGS_KEYS_MAX
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.views.debug import SafeExceptionReporterFilter
+
 from kaleidoscope.panel import Panel
 
 
-MASKED_KEYWORDS = (
-    'API_KEY',
-    'KEY',
-    'PASSWORD',
-    'SECRET',
-    'TOKEN',
-)
+MASKED_VALUE = '********'
+SETTINGS_KEYS_MAX = 4_096
+_MISSING = object()
+
+
+class _SettingsFilter(SafeExceptionReporterFilter):
+    cleansed_substitute = MASKED_VALUE
+
+
+def _repr_safe(value: object) -> str:
+    try:
+        text = repr(value)
+    except Exception:
+        text = f'<{type(value).__name__}>'
+
+    return text
+
+
+def _setting_keys() -> list[str]:
+    return [key for key in sorted(dir(settings))[:SETTINGS_KEYS_MAX] if key.isupper()]
+
+
+def _setting_read(key: str) -> object:
+    if not isinstance(key, str):
+        message = f'a setting name must be text: {key!r}'
+        raise TypeError(message)
+
+    if not key.isupper():
+        message = f'a setting name must be upper case: {key!r}'
+        raise ValueError(message)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=DeprecationWarning)
+        warnings.simplefilter('ignore', category=PendingDeprecationWarning)
+
+        try:
+            value = getattr(settings, key)
+        except (AttributeError, ImproperlyConfigured):
+            value = _MISSING
+
+    return value
+
+
+def _setting_serialized(key: str, value: object) -> object:
+    if not isinstance(key, str):
+        message = f'a setting name must be text: {key!r}'
+        raise TypeError(message)
+
+    try:
+        cleansed = _SettingsFilter().cleanse_setting(key, value)
+    except RecursionError:
+        return MASKED_VALUE
+
+    try:
+        json.dumps(cleansed, allow_nan=False)
+    except (OverflowError, RecursionError, TypeError, ValueError):
+        return _repr_safe(cleansed)
+
+    return cleansed
 
 
 class SettingsPanel(Panel):
@@ -23,52 +78,27 @@ class SettingsPanel(Panel):
     def __init__(self) -> None:
         super().__init__()
 
-        self._data: dict | None = None
-        self._lock = threading.Lock()
-
-    def _serialize(self, key: str, value: object) -> object:
-        if any(keyword in key.upper() for keyword in MASKED_KEYWORDS):
-            return '********'
-
-        try:
-            json.dumps(value)
-        except (TypeError, ValueError):
-            return repr(value)
-        else:
-            return value
+        self._count: int | None = None
 
     def get_data(self) -> dict:
-        from django.conf import settings  # noqa: PLC0415
-
         items = {}
 
-        all_keys = sorted(dir(settings))[:SETTINGS_KEYS_MAX]
+        for key in _setting_keys():
+            value = _setting_read(key)
 
-        for key in all_keys:
-            if key.isupper():
-                value = getattr(settings, key)
-                items[key] = self._serialize(key, value)
+            if value is _MISSING:
+                continue
 
-        data = {
-            'count': len(items),
-            'settings': items,
-        }
+            items[key] = _setting_serialized(key, value)
 
-        with self._lock:
-            self._data = data
+        self._count = len(items)
 
-        return data
+        return {'count': len(items), 'settings': items}
 
     def get_summary(self) -> str:
-        with self._lock:
-            if self._data:
-                return f'{self._data["count"]} settings'
+        count = self._count
 
-        from django.conf import settings  # noqa: PLC0415
-
-        count = sum(
-            1 for key in sorted(dir(settings))[:SETTINGS_KEYS_MAX]
-            if key.isupper()
-        )
+        if count is None:
+            count = len(_setting_keys())
 
         return f'{count} settings'

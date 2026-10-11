@@ -18,7 +18,6 @@ MEMORY_RETAINED_ROWS = 4_000
 MEMORY_ROW_COUNT = 40_000
 ORDER_ROW_LIMIT = 25
 SEARCH_ROW_LIMIT = 30
-
 _rows_retained: list[dict] = []
 
 
@@ -31,8 +30,7 @@ def author_rows_python_side() -> list[dict]:
         ratings = []
 
         for book in books:
-            for review in book.reviews.all():
-                ratings.append(review.rating)
+            ratings.extend(review.rating for review in book.reviews.all())
 
         row = {
             'author': author,
@@ -73,12 +71,14 @@ def cache_thrash_run() -> dict:
 
         if value is None:
             payload = {'index': index, 'payload': 'x' * 256}
+
             cache.set(key, payload, 5)
             misses += 1
         else:
             hits += 1
 
     warm_keys = [f'demo-cache-key-{index}' for index in range(10)]
+
     cache.get_many(warm_keys)
 
     for index in range(10):
@@ -111,9 +111,7 @@ def catalog_totals_python_side() -> dict:
 
     for book in books:
         catalog_value += float(book.price)
-
-        for review in book.reviews.all():
-            ratings.append(review.rating)
+        ratings.extend(review.rating for review in book.reviews.all())
 
     return {
         'catalog_value': round(catalog_value, 2),
@@ -189,6 +187,7 @@ def review_rows_unoptimized() -> list[Review]:
 
 def search_results_python_side(term: str) -> list[dict]:
     books = list(Book.objects.filter(title__icontains=term))
+
     books.extend(Book.objects.filter(summary__icontains=term))
     books.extend(Book.objects.filter(author__name__icontains=term))
 

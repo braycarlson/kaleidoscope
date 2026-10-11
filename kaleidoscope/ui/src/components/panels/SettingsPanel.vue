@@ -29,7 +29,16 @@ const text_filter = ref('');
 const expanded = ref<Record<string, boolean>>({});
 
 const entries = computed(function(): SettingsEntry[] {
-    const items: Record<string, unknown> = props.data.settings || {};
+    const value: unknown = props.data.settings;
+
+    if (typeof value !== 'object') {
+        throw new TypeError('the settings must be a record, not ' + typeof value);
+    }
+
+    if (value === null) throw new TypeError('the settings must be a record, not null');
+    if (Array.isArray(value)) throw new TypeError('the settings must be a record, not a list');
+
+    const items = value as Record<string, unknown>;
     const search = text_filter.value.toLowerCase();
     const list: SettingsEntry[] = [];
 
@@ -66,14 +75,17 @@ function preview_format(value: unknown): string {
     if (value === null) return 'None';
     if (value === undefined) return 'undefined';
     if (typeof value === 'boolean') return value ? 'True' : 'False';
+
     if (typeof value === 'string') {
         if (value === '********') return '********';
         if (value.length > 80) return value.substring(0, 77) + '...';
         return value;
     }
+
     if (Array.isArray(value)) return value.length === 0 ? '[]' : '[...]';
-    if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length === 0 ? '{}' : '{...}';
-    return String(value);
+    if (typeof value === 'object') return Object.keys(value).length === 0 ? '{}' : '{...}';
+    if (typeof value === 'number') return String(value);
+    return typeof value;
 }
 
 function full_format(value: unknown): string {
@@ -81,7 +93,10 @@ function full_format(value: unknown): string {
     if (value === undefined) return 'undefined';
     if (typeof value === 'boolean') return value ? 'True' : 'False';
     if (typeof value === 'string') return value;
-    return JSON.stringify(value, null, 2);
+
+    const text = JSON.stringify(value, null, 2);
+    if (typeof text !== 'string') throw new TypeError('a setting is not JSON: ' + typeof value);
+    return text;
 }
 
 function expanded_toggle(key: string) {
@@ -110,7 +125,7 @@ function expanded_toggle(key: string) {
                 <table class="w-full border-collapse min-w-[400px]">
                     <thead>
                         <tr>
-                            <SortHeader column="key" :sort_column="sort_column" :sort_direction="sort_direction" label="Setting" class="!w-48 sm:!w-72" @sort="sort_toggle" />
+                            <SortHeader column="key" :sort_column="sort_column" :sort_direction="sort_direction" label="Setting" class="w-48! sm:w-72!" @sort="sort_toggle" />
                             <SortHeader column="value_string" :sort_column="sort_column" :sort_direction="sort_direction" label="Value" @sort="sort_toggle" />
                         </tr>
                     </thead>
@@ -118,12 +133,12 @@ function expanded_toggle(key: string) {
                         <tr
                             v-for="entry in settings_sorted"
                             :key="entry.key"
-                            class="hover:bg-white/[0.02]"
+                            class="hover:bg-white/2"
                             :class="entry.expandable ? 'cursor-pointer' : ''"
                             @click="entry.expandable ? expanded_toggle(entry.key) : undefined"
                         >
-                            <td class="w-48 sm:w-72 px-2 py-1.5 text-[13px] font-semibold border-t border-white/[0.04] align-top">{{ entry.key }}</td>
-                            <td class="px-2 py-1.5 text-[13px] font-mono border-t border-white/[0.04]">
+                            <td class="w-48 sm:w-72 px-2 py-1.5 text-[13px] font-semibold border-t border-white/4 align-top">{{ entry.key }}</td>
+                            <td class="px-2 py-1.5 text-[13px] font-mono border-t border-white/4">
                                 <div v-if="!expanded[entry.key]" class="flex items-center gap-2 overflow-hidden">
                                     <ChevronRight v-if="entry.expandable" :size="12" class="opacity-30 shrink-0" />
                                     <span class="overflow-hidden text-ellipsis whitespace-nowrap" :class="entry.preview === '********' ? 'opacity-30' : ''">{{ entry.preview }}</span>

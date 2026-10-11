@@ -17,7 +17,7 @@ const model = defineModel<string>({ default: '' });
             v-model="model"
             type="text"
             :placeholder="placeholder"
-            class="pl-8 pr-3 py-1 bg-ks-input border border-ks rounded text-[13px] outline-none focus:border-purple-500/50 w-full sm:w-56"
+            class="pl-8 pr-3 py-1 bg-ks-input border border-ks rounded-sm text-[13px] outline-hidden focus:border-purple-500/50 w-full sm:w-56"
         >
     </div>
 </template>

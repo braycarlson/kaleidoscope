@@ -27,7 +27,9 @@ interface MemoryPanelData {
     total_size_display?: string;
 }
 
-const CATEGORY_STYLES: Record<string, CategoryStyle> = {
+type Category = 'builtin' | 'django' | 'project' | 'stdlib';
+
+const CATEGORY_STYLES: Record<Category, CategoryStyle> = {
     'builtin': { text: 'text-blue-400', background: 'bg-blue-500', dot: 'bg-blue-400' },
     'stdlib':  { text: 'text-cyan-400', background: 'bg-cyan-500', dot: 'bg-cyan-400' },
     'django':  { text: 'text-green-400', background: 'bg-green-500', dot: 'bg-green-400' },
@@ -47,7 +49,7 @@ const show_unchanged = ref(false);
 const category_active = ref<string | null>(null);
 
 const rows_filtered = computed(function(): MemoryRow[] {
-    const rows: MemoryRow[] = props.data.diff || [];
+    const rows: MemoryRow[] = props.data.diff ?? [];
     const search = text_filter.value.toLowerCase();
 
     return rows.filter(function(row) {
@@ -63,15 +65,23 @@ const rows_filtered = computed(function(): MemoryRow[] {
 const { sort_column, sort_direction, sorted: diff_sorted, sort_toggle } = use_sort(rows_filtered, 'size', 'desc');
 
 const stats = computed(function() {
-    const rows: MemoryRow[] = props.data.diff || [];
+    const rows: MemoryRow[] = props.data.diff ?? [];
     let allocated = 0;
     let freed = 0;
     let unchanged = 0;
 
-    for (let index = 0; index < rows.length; index++) {
-        if (rows[index].count > 0) allocated++;
-        if (rows[index].count < 0) freed++;
-        if (rows[index].count === 0) unchanged++;
+    for (const row of rows) {
+        if (row.count > 0) {
+            allocated++;
+        }
+
+        if (row.count < 0) {
+            freed++;
+        }
+
+        if (row.count === 0) {
+            unchanged++;
+        }
     }
 
     return { allocated, freed, unchanged };
@@ -94,12 +104,12 @@ const stats_header = computed(function() {
 });
 
 const stats_category = computed(function() {
-    const rows: MemoryRow[] = props.data.diff || [];
+    const rows: MemoryRow[] = props.data.diff ?? [];
     const counts: Record<string, number> = {};
 
-    for (let index = 0; index < rows.length; index++) {
-        const category = rows[index].category || 'project';
-        counts[category] = (counts[category] || 0) + 1;
+    for (const row of rows) {
+        const category = row.category || 'project';
+        counts[category] = (counts[category] ?? 0) + 1;
     }
 
     return counts;
@@ -110,19 +120,37 @@ function category_toggle(category: string) {
 }
 
 function class_row(row: MemoryRow): string {
+    if (!Number.isFinite(row.count)) {
+        throw new RangeError('a memory row count must be a finite number: ' + row.count);
+    }
+
     if (row.count > 0) return 'text-red-400';
     if (row.count < 0) return 'text-green-400';
     return 'opacity-30';
 }
 
 function class_size(row: MemoryRow): string {
+    if (!Number.isFinite(row.size)) {
+        throw new RangeError('a memory row size must be a finite number: ' + row.size);
+    }
+
     if (row.size > 0) return 'text-red-400';
     if (row.size < 0) return 'text-green-400';
     return 'opacity-30';
 }
 
+function is_category(value: string): value is Category {
+    return Object.hasOwn(CATEGORY_STYLES, value);
+}
+
 function style_for(category: string): CategoryStyle {
-    return CATEGORY_STYLES[category] || CATEGORY_STYLES['project'];
+    if (typeof category !== 'string') {
+        throw new TypeError('a memory category must be text: ' + String(category));
+    }
+
+    if (is_category(category)) return CATEGORY_STYLES[category];
+
+    return CATEGORY_STYLES.project;
 }
 </script>
 
@@ -175,12 +203,12 @@ function style_for(category: string): CategoryStyle {
                         <button
                             v-for="category in CATEGORY_KEYS"
                             :key="category"
-                            class="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors cursor-pointer"
+                            class="flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[11px] transition-colors cursor-pointer"
                             :class="category_active === category
                                 ? style_for(category).background + ' text-white'
                                 : category_active === null
-                                    ? style_for(category).text + ' bg-white/[0.05]'
-                                    : 'opacity-30 bg-white/[0.03]'"
+                                    ? style_for(category).text + ' bg-white/5'
+                                    : 'opacity-30 bg-white/3'"
                             @click="category_toggle(category)"
                         >
                             <span class="w-1.5 h-1.5 rounded-full" :class="style_for(category).dot" />
@@ -194,17 +222,17 @@ function style_for(category: string): CategoryStyle {
                         <thead>
                             <tr>
                                 <SortHeader column="type" :sort_column="sort_column" :sort_direction="sort_direction" label="Type" @sort="sort_toggle" />
-                                <SortHeader column="category" :sort_column="sort_column" :sort_direction="sort_direction" label="Category" class="!w-24 hidden sm:table-cell" @sort="sort_toggle" />
-                                <SortHeader column="count" :sort_column="sort_column" :sort_direction="sort_direction" label="Count" class="!w-20 sm:!w-24" @sort="sort_toggle" />
-                                <SortHeader column="size" :sort_column="sort_column" :sort_direction="sort_direction" label="Size" class="!w-24 sm:!w-28" @sort="sort_toggle" />
+                                <SortHeader column="category" :sort_column="sort_column" :sort_direction="sort_direction" label="Category" class="w-24! hidden sm:table-cell" @sort="sort_toggle" />
+                                <SortHeader column="count" :sort_column="sort_column" :sort_direction="sort_direction" label="Count" class="w-20! sm:w-24!" @sort="sort_toggle" />
+                                <SortHeader column="size" :sort_column="sort_column" :sort_direction="sort_direction" label="Size" class="w-24! sm:w-28!" @sort="sort_toggle" />
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(row, i) in diff_sorted" :key="i" class="hover:bg-white/[0.02]">
-                                <td class="px-2 py-1.5 text-[13px] font-mono border-t border-white/[0.04]" :class="class_row(row)">{{ row.type }}</td>
-                                <td class="w-24 px-2 py-1.5 text-[13px] border-t border-white/[0.04] hidden sm:table-cell" :class="style_for(row.category || 'project').text">{{ row.category || 'project' }}</td>
-                                <td class="w-20 sm:w-24 px-2 py-1.5 text-[13px] font-mono border-t border-white/[0.04]" :class="class_row(row)">{{ row.count > 0 ? '+' : '' }}{{ row.count }}</td>
-                                <td class="w-24 sm:w-28 px-2 py-1.5 text-[13px] font-mono border-t border-white/[0.04]" :class="class_size(row)">{{ row.size_display }}</td>
+                            <tr v-for="(row, i) in diff_sorted" :key="i" class="hover:bg-white/2">
+                                <td class="px-2 py-1.5 text-[13px] font-mono border-t border-white/4" :class="class_row(row)">{{ row.type }}</td>
+                                <td class="w-24 px-2 py-1.5 text-[13px] border-t border-white/4 hidden sm:table-cell" :class="style_for(row.category || 'project').text">{{ row.category || 'project' }}</td>
+                                <td class="w-20 sm:w-24 px-2 py-1.5 text-[13px] font-mono border-t border-white/4" :class="class_row(row)">{{ row.count > 0 ? '+' : '' }}{{ row.count }}</td>
+                                <td class="w-24 sm:w-28 px-2 py-1.5 text-[13px] font-mono border-t border-white/4" :class="class_size(row)">{{ row.size_display }}</td>
                             </tr>
                         </tbody>
                     </table>

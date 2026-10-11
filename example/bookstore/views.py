@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 
+from dataclasses import dataclass
 from typing_extensions import TYPE_CHECKING
 
 from django.http import JsonResponse
@@ -32,89 +33,108 @@ API_ROW_LIMIT = 40
 REPORT_ROW_LIMIT = 200
 
 
+@dataclass(frozen=True, slots=True)
+class TourStop:
+    description: str
+    panel: str
+    title: str
+    url_name: str
+
+
+TOUR_STOPS = (
+    TourStop(
+        description=(
+            'Sixty rows, each one refetching its author, publisher and reviews '
+            'one query at a time.'
+        ),
+        panel='Queries',
+        title='Books',
+        url_name='bookstore:book_list'
+    ),
+    TourStop(
+        description=(
+            'The same page rewritten with select_related, prefetch_related and '
+            'database aggregates.'
+        ),
+        panel='Queries',
+        title='Books (fixed)',
+        url_name='bookstore:book_list_optimized'
+    ),
+    TourStop(
+        description=(
+            'A count() per author, a rating average assembled in Python and a sort '
+            'that never reaches the database.'
+        ),
+        panel='Queries',
+        title='Authors',
+        url_name='bookstore:author_list'
+    ),
+    TourStop(
+        description=(
+            'Four levels deep: order, item, book, author, each level fetched inside '
+            'the loop above it.'
+        ),
+        panel='Queries',
+        title='Orders',
+        url_name='bookstore:order_list'
+    ),
+    TourStop(
+        description=(
+            'A view that spends most of its time in Python: nested loops, string '
+            'concatenation and repeated sorts.'
+        ),
+        panel='Profiling',
+        title='Reports',
+        url_name='bookstore:report'
+    ),
+    TourStop(
+        description=(
+            'Three unindexed LIKE scans over the whole table, deduplicated and '
+            'ranked after the fact.'
+        ),
+        panel='Queries',
+        title='Search',
+        url_name='bookstore:search'
+    ),
+    TourStop(
+        description=(
+            'Key-by-key cache traffic: get, set, get_many, has_key, delete and '
+            'get_or_set on every request.'
+        ),
+        panel='Cache',
+        title='Cache',
+        url_name='bookstore:cache'
+    ),
+    TourStop(
+        description=(
+            'Forty thousand throwaway dictionaries, an index over them and a list '
+            'that never releases what it keeps.'
+        ),
+        panel='Memory',
+        title='Memory',
+        url_name='bookstore:memory'
+    ),
+    TourStop(
+        description=(
+            'Lifetime spend per customer, computed by walking every order and every '
+            'line item in Python.'
+        ),
+        panel='Queries',
+        title='Customers',
+        url_name='bookstore:customer_list'
+    )
+)
+
+
 def _tour_built() -> list[dict]:
     return [
         {
-            'description': (
-                'Sixty rows, each one refetching its author, publisher and reviews '
-                'one query at a time.'
-            ),
-            'panel': 'Queries',
-            'title': 'Books',
-            'url': reverse('bookstore:book_list')
-        },
-        {
-            'description': (
-                'The same page rewritten with select_related, prefetch_related and '
-                'database aggregates.'
-            ),
-            'panel': 'Queries',
-            'title': 'Books (fixed)',
-            'url': reverse('bookstore:book_list_optimized')
-        },
-        {
-            'description': (
-                'A count() per author, a rating average assembled in Python and a sort '
-                'that never reaches the database.'
-            ),
-            'panel': 'Queries',
-            'title': 'Authors',
-            'url': reverse('bookstore:author_list')
-        },
-        {
-            'description': (
-                'Four levels deep: order, item, book, author, each level fetched inside '
-                'the loop above it.'
-            ),
-            'panel': 'Queries',
-            'title': 'Orders',
-            'url': reverse('bookstore:order_list')
-        },
-        {
-            'description': (
-                'A view that spends most of its time in Python: nested loops, string '
-                'concatenation and repeated sorts.'
-            ),
-            'panel': 'Profiling',
-            'title': 'Reports',
-            'url': reverse('bookstore:report')
-        },
-        {
-            'description': (
-                'Three unindexed LIKE scans over the whole table, deduplicated and '
-                'ranked after the fact.'
-            ),
-            'panel': 'Queries',
-            'title': 'Search',
-            'url': reverse('bookstore:search')
-        },
-        {
-            'description': (
-                'Key-by-key cache traffic: get, set, get_many, has_key, delete and '
-                'get_or_set on every request.'
-            ),
-            'panel': 'Cache',
-            'title': 'Cache',
-            'url': reverse('bookstore:cache')
-        },
-        {
-            'description': (
-                'Forty thousand throwaway dictionaries, an index over them and a list '
-                'that never releases what it keeps.'
-            ),
-            'panel': 'Memory',
-            'title': 'Memory',
-            'url': reverse('bookstore:memory')
-        },
-        {
-            'description': (
-                'Lifetime spend per customer, computed by walking every order and every '
-                'line item in Python.'
-            ),
-            'panel': 'Queries',
-            'title': 'Customers',
-            'url': reverse('bookstore:customer_list')
+            'description': stop.description,
+            'panel': stop.panel,
+            'title': stop.title,
+            'url': reverse(stop.url_name)
         }
+        for stop in TOUR_STOPS
     ]
 
 
@@ -366,10 +386,8 @@ def order_list_view(request: HttpRequest) -> HttpResponse:
 
 def report_view(request: HttpRequest) -> HttpResponse:
     started = time.perf_counter()
-
     books = list(Book.objects.all()[:REPORT_ROW_LIMIT])
     reviews = list(Review.objects.all())
-
     histogram = {}
     revenue_by_publisher = {}
     revenue_by_title = {}

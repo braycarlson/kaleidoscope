@@ -7,7 +7,7 @@ from bookstore import views
 
 app_name = 'bookstore'
 
-urlpatterns = [
+urlpatterns = (
     path('', views.dashboard_view, name='dashboard'),
     path('api/books/', views.api_book_list_view, name='api_book_list'),
     path('authors/', views.author_list_view, name='author_list'),
@@ -20,4 +20,4 @@ urlpatterns = [
     path('orders/', views.order_list_view, name='order_list'),
     path('reports/', views.report_view, name='report'),
     path('search/', views.search_view, name='search')
-]
+)

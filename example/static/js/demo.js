@@ -7,7 +7,8 @@ document.addEventListener('alpine:init', () => {
         async probe() {
             this.loading = true;
 
-            const response = await fetch('/api/books/', {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            const options = {headers: {'X-Requested-With': 'XMLHttpRequest'}};
+            const response = await fetch('/api/books/', options);
             const payload = await response.json();
 
             this.count = payload.count;

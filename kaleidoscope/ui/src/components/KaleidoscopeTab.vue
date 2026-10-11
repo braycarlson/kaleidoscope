@@ -19,7 +19,11 @@ const { tab_top, dragging, on_mousedown, on_touchstart } = use_drag(function() {
 
 <template>
     <div
-        class="fixed z-[1000000] bg-ks-panel border border-ks-tab shadow-ks-tab px-4 py-5 select-none flex flex-col items-center gap-1"
+        data-ks="tab"
+        role="button"
+        tabindex="0"
+        aria-label="Open Kaleidoscope"
+        class="fixed z-1000000 bg-ks-panel border border-ks-tab shadow-ks-tab px-4 py-5 select-none flex flex-col items-center gap-1"
         :class="[
             dragging ? 'cursor-grabbing opacity-80' : 'cursor-grab opacity-75 hover:opacity-100',
             side === 'right'
@@ -29,7 +33,9 @@ const { tab_top, dragging, on_mousedown, on_touchstart } = use_drag(function() {
         :style="{ top: tab_top + 'px' }"
         @mousedown="on_mousedown"
         @touchstart="on_touchstart"
+        @keydown.enter.prevent="emit('open')"
+        @keydown.space.prevent="emit('open')"
     >
-        <span class="font-bold text-[15px] tracking-[0.15em] bg-gradient-to-r from-purple-500 via-fuchsia-400 to-purple-300 bg-clip-text text-transparent">dk</span>
+        <span class="font-bold text-[15px] tracking-[0.15em] bg-linear-to-r from-purple-500 via-fuchsia-400 to-purple-300 bg-clip-text text-transparent">dk</span>
     </div>
 </template>

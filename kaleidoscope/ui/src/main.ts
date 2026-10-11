@@ -8,17 +8,22 @@ if (!host) {
     throw new Error('Kaleidoscope mount point #ks-app not found');
 }
 
+const launch = host.dataset['launch'] ?? '';
 const shadow = host.attachShadow({ mode: 'open' });
-
 const link = document.createElement('link');
 link.rel = 'stylesheet';
 link.href = '/__kaleidoscope__/static/kaleidoscope.css';
 
 const root = document.createElement('div');
 
-link.addEventListener('load', function() {
+function app_mount() {
+    if (root.parentNode !== null) return;
+
     shadow.appendChild(root);
-    createApp(App).mount(root);
-});
+    createApp(App, { launch: launch }).mount(root);
+}
+
+link.addEventListener('load', app_mount);
+link.addEventListener('error', app_mount);
 
 shadow.appendChild(link);

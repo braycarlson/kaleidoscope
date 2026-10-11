@@ -6,7 +6,7 @@ import ContextValueContainer from './ContextValueContainer.vue';
 import CopyButton from '../CopyButton.vue';
 import DataTable from '../DataTable.vue';
 import PanelHeader from '../PanelHeader.vue';
-import type { ColumnDef } from '@tanstack/vue-table';
+import type { TableColumn } from '../../services/table';
 
 interface TemplateEntry {
     _index: number;
@@ -22,9 +22,9 @@ interface TemplateRaw {
 }
 
 interface TemplatesPanelData {
-    count: number;
-    templates: TemplateRaw[];
-    total_time: number;
+    count?: number;
+    templates?: TemplateRaw[];
+    total_time?: number;
 }
 
 const props = defineProps<{
@@ -35,7 +35,7 @@ const text_filter = ref('');
 const active_key = ref<Record<number, string | null>>({});
 
 watch(function() {
-    return (props.data.templates || []).map(function(template) { return template.name; }).join('|');
+    return (props.data.templates ?? []).map(function(template) { return template.name; }).join('|');
 }, function(signature_new, signature_old) {
     if (signature_new !== signature_old) {
         active_key.value = {};
@@ -43,10 +43,10 @@ watch(function() {
 });
 
 const templates_enriched = computed(function(): TemplateEntry[] {
-    return (props.data.templates || []).map(function(template, index) {
+    return (props.data.templates ?? []).map(function(template, index) {
         return {
             ...template,
-            context_keys: template.context_keys || [],
+            context_keys: template.context_keys ?? [],
             _index: index,
         };
     });
@@ -63,6 +63,8 @@ const templates_filtered = computed(function(): TemplateEntry[] {
 });
 
 function key_toggle(template_index: number, key: string) {
+    if (typeof key !== 'string') throw new TypeError('a context key must be text: ' + String(key));
+
     if (active_key.value[template_index] === key) {
         active_key.value = { ...active_key.value, [template_index]: null };
     } else {
@@ -70,13 +72,19 @@ function key_toggle(template_index: number, key: string) {
     }
 }
 
-const columns: ColumnDef<TemplateEntry, unknown>[] = [
+const columns: TableColumn<TemplateEntry>[] = [
     {
         accessorKey: 'name',
         header: 'Template',
         cell: function(info) {
             const name = info.getValue() as string;
+
+            if (typeof name !== 'string') {
+                throw new TypeError('a template name must be text: ' + String(name));
+            }
+
             const is_inline = name === '<inline>';
+
             return h('span', {
                 class: [
                     'font-mono text-[12px] overflow-hidden text-ellipsis whitespace-nowrap block max-w-[150px] sm:max-w-none',
@@ -89,20 +97,30 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
     {
         accessorKey: 'duration_ms',
         header: 'Duration',
-        meta: { headerClass: '!w-40', cellClass: 'w-40' },
+        meta: { headerClass: 'w-40!', cellClass: 'w-40' },
         cell: function(info) {
             const value = info.getValue() as number;
+
+            if (!Number.isFinite(value)) {
+                throw new RangeError('a template duration must be a finite number: ' + value);
+            }
+
             const class_name = value >= 10 ? 'text-orange-500 font-semibold' : value >= 5 ? 'text-yellow-500' : '';
+
             return h('span', { class: class_name }, value.toFixed(2) + ' ms');
         },
     },
     {
         id: 'context_keys',
         accessorFn: function(row) {
-            return (row.context_keys || []).length;
+            if (!Array.isArray(row.context_keys)) {
+                throw new TypeError('context keys must be a list: ' + String(row.context_keys));
+            }
+
+            return row.context_keys.length;
         },
         header: 'Context Variables',
-        meta: { headerClass: '!w-48 hidden sm:table-cell', cellClass: 'w-48 hidden sm:table-cell' },
+        meta: { headerClass: 'w-48! hidden sm:table-cell', cellClass: 'w-48 hidden sm:table-cell' },
         cell: function(info) {
             const count = info.getValue() as number;
             return h('span', { class: count > 0 ? '' : 'opacity-30' }, String(count));
@@ -115,8 +133,8 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
     <div>
         <PanelHeader
             :stats="[
-                { label: 'Templates', value: data.count },
-                { label: 'Time', value: data.total_time + ' ms' },
+                { label: 'Templates', value: data.count ?? 0 },
+                { label: 'Time', value: (data.total_time ?? 0) + ' ms' },
             ]"
         />
 
@@ -133,7 +151,7 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
                         v-model="text_filter"
                         type="text"
                         placeholder="Filter..."
-                        class="pl-8 pr-3 py-1 bg-white/[0.05] border border-white/10 rounded text-[13px] text-[#d0d0e0] outline-none focus:border-purple-500/50 w-full sm:w-64"
+                        class="pl-8 pr-3 py-1 bg-white/5 border border-white/10 rounded-sm text-[13px] text-[#d0d0e0] outline-hidden focus:border-purple-500/50 w-full sm:w-64"
                     >
                 </div>
             </div>
@@ -153,10 +171,10 @@ const columns: ColumnDef<TemplateEntry, unknown>[] = [
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <button
-                                v-for="key in (row.context_keys || [])"
-                                :key="key"
-                                class="inline-block px-2 py-0.5 rounded text-[12px] font-mono cursor-pointer transition-colors"
-                                :class="active_key[row._index] === key ? 'bg-purple-400/20 text-purple-200' : 'bg-white/[0.05] hover:bg-white/[0.1] text-gray-300'"
+                                v-for="(key, key_index) in (row.context_keys || [])"
+                                :key="key_index + ':' + key"
+                                class="inline-block px-2 py-0.5 rounded-sm text-[12px] font-mono cursor-pointer transition-colors"
+                                :class="active_key[row._index] === key ? 'bg-purple-400/20 text-purple-200' : 'bg-white/5 hover:bg-white/10 text-gray-300'"
                                 @click="key_toggle(row._index, key)"
                             >
                                 {{ key }}

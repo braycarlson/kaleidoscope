@@ -32,6 +32,8 @@ interface ValueData {
     error?: string;
 }
 
+const CONTAINER_TYPES: readonly string[] = ['dict', 'list', 'tuple', 'set', 'object', 'model', 'queryset', 'enum'];
+
 const props = defineProps<{
     template_index: number;
     path: PathStep[];
@@ -44,19 +46,31 @@ const props = defineProps<{
     auto_expand?: boolean;
 }>();
 
-const expanded = ref(props.auto_expand === true);
-const loaded_value = ref<ValueData | null>(props.initial || null);
+const expanded = ref(props.auto_expand);
+const loaded_value = ref<ValueData | null>(props.initial ?? null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
 const can_expand = computed(function() {
     if (loaded_value.value) return is_container(loaded_value.value.type);
     if (error.value) return false;
-    if (props.has_children === false) return false;
+    if (!props.has_children) return false;
     return true;
 });
 
 function load() {
+    if (!Number.isInteger(props.template_index)) {
+        throw new TypeError('a template index must be an integer: ' + props.template_index);
+    }
+
+    if (props.template_index < 0) {
+        throw new RangeError('a template index must not be negative: ' + props.template_index);
+    }
+
+    if (!Array.isArray(props.path)) {
+        throw new TypeError('a value path must be a list: ' + String(props.path));
+    }
+
     loading.value = true;
     error.value = null;
 
@@ -67,7 +81,7 @@ function load() {
     fetch_native(url).then(function(response) {
         if (!response.ok) {
             return response.json().catch(function() { return {}; }).then(function(body: { error?: string }) {
-                error.value = body.error || ('HTTP ' + response.status);
+                error.value = body.error ?? ('HTTP ' + response.status);
                 loading.value = false;
             });
         }
@@ -99,12 +113,19 @@ onMounted(function() {
 });
 
 function is_container(type: string): boolean {
-    return ['dict', 'list', 'tuple', 'set', 'object', 'model', 'queryset', 'enum'].indexOf(type) !== -1;
+    if (typeof type !== 'string') throw new TypeError('a value type must be text: ' + String(type));
+    return CONTAINER_TYPES.includes(type);
 }
 
 function children_of(node: ValueData): ChildEntry[] {
-    if (node.type === 'object' || node.type === 'model') return node.attributes || [];
-    return node.items || [];
+    const attributed = node.type === 'object' || node.type === 'model';
+    const children = (attributed ? node.attributes : node.items) ?? [];
+
+    if (!Array.isArray(children)) {
+        throw new TypeError('value children must be a list: ' + String(children));
+    }
+
+    return children;
 }
 
 function children_separator(node: ValueData): string {
@@ -113,48 +134,70 @@ function children_separator(node: ValueData): string {
 }
 
 function container_header(node: ValueData): string {
-    if (node.type === 'object') return '<' + node.class_name + '>';
-    if (node.type === 'model') return '<' + node.class_name + ' pk=' + node.pk + '>';
-    if (node.type === 'queryset') return '<QuerySet [' + node.model + '] size=' + node.size + '>';
-    if (node.type === 'enum') return '<' + node.class_name + '[' + node.size + ']>';
-    if (node.type === 'dict') return 'dict[' + node.size + ']';
-    if (node.type === 'list') return 'list[' + node.size + ']';
-    if (node.type === 'tuple') return 'tuple[' + node.size + ']';
-    if (node.type === 'set') return 'set[' + node.size + ']';
+    const name = node.class_name ?? '';
+    const size = node.size ?? 0;
+    if (!Number.isFinite(size)) throw new RangeError('a container size must be finite: ' + size);
+
+    if (node.type === 'object') return '<' + name + '>';
+    if (node.type === 'model') return '<' + name + ' pk=' + (node.pk ?? '') + '>';
+    if (node.type === 'queryset') return '<QuerySet [' + (node.model ?? '') + '] size=' + size + '>';
+    if (node.type === 'enum') return '<' + name + '[' + size + ']>';
+    if (node.type === 'dict') return 'dict[' + size + ']';
+    if (node.type === 'list') return 'list[' + size + ']';
+    if (node.type === 'tuple') return 'tuple[' + size + ']';
+    if (node.type === 'set') return 'set[' + size + ']';
     return '';
 }
 
 function code_for_leaf(node: ValueData): string {
     if (node.type === 'none') return 'None';
     if (node.type === 'bool') return node.value ? 'True' : 'False';
-    if (node.type === 'number') return node.repr || '';
+    if (node.type === 'number') return node.repr ?? '';
 
     if (node.type === 'string') {
-        const raw = (node.value || '') as string;
+        const raw = typeof node.value === 'string' ? node.value : '';
         const quoted = JSON.stringify(raw);
         const inner = quoted.slice(1, -1).replace(/'/g, "\\'");
         let code = "'" + inner + "'";
 
-        if (node.truncated) code += '  # ...+' + node.truncated + ' chars';
+        if (node.truncated) {
+            code += '  # ...+' + node.truncated + ' chars';
+        }
 
         return code;
     }
 
     if (node.type === 'lazy') return '<lazy>';
-    if (node.type === 'callable') return '<fn ' + node.name + '>';
+    if (node.type === 'callable') return '<fn ' + (node.name ?? '') + '>';
 
     if (node.type === 'repr') {
-        let code = (node.value || '') as string;
-        if (node.truncated) code += '  # ...+' + node.truncated + ' chars';
+        let code = typeof node.value === 'string' ? node.value : '';
+
+        if (node.truncated) {
+            code += '  # ...+' + node.truncated + ' chars';
+        }
+
         return code;
     }
 
-    if (node.type === 'error') return '<' + node.class_name + ' error>';
+    if (node.type === 'error') return '<' + (node.class_name ?? '') + ' error>';
 
     return '';
 }
 
 function sub_path(step: PathStep): PathStep[] {
+    const value: unknown = step;
+
+    if (typeof value !== 'object') {
+        throw new TypeError('a path step must be a record, not ' + typeof value);
+    }
+
+    if (value === null) throw new TypeError('a path step must be a record, not null');
+
+    if (typeof step.kind !== 'string') {
+        throw new TypeError('a path step kind must be text: ' + String(step.kind));
+    }
+
     return [...props.path, step];
 }
 </script>
@@ -162,8 +205,8 @@ function sub_path(step: PathStep): PathStep[] {
 <template>
     <div>
         <div
-            class="flex items-baseline gap-1.5 px-1 py-0.5 rounded leading-5"
-            :class="[can_expand ? 'hover:bg-white/[0.03] cursor-pointer' : '']"
+            class="flex items-baseline gap-1.5 px-1 py-0.5 rounded-sm leading-5"
+            :class="[can_expand ? 'hover:bg-white/3 cursor-pointer' : '']"
             @click="toggle"
         >
             <span class="w-3 shrink-0 inline-flex items-center justify-center self-center">

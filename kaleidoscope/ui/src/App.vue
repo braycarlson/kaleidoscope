@@ -25,6 +25,12 @@ import { json_fetch } from './services/api';
 import { DEBOUNCE_MS } from './constants';
 import type { KaleidoscopeState, PanelRegistry } from './types';
 
+const props = withDefaults(defineProps<{
+    launch?: string;
+}>(), {
+    launch: '',
+});
+
 const panel_registry: PanelRegistry = {
     'cache': CachePanel,
     'line_profiling': LineProfilingPanel,
@@ -41,17 +47,27 @@ const panel_registry: PanelRegistry = {
 };
 
 const state = ref<KaleidoscopeState>('collapsed');
+const toggles_pending = new Set<string>();
+let mounted = false;
 let timer_fetch: ReturnType<typeof setTimeout> | null = null;
 let interceptors_cleanup: (() => void) | null = null;
 
 const { theme, toggle: theme_toggle } = use_theme();
-
 const { is_mobile } = use_mobile();
-const { panel_order, panels_disabled, side, preferences_save, preferences_load } = use_preferences();
+
+const {
+    panel_order,
+    panels_disabled,
+    side,
+    preferences_save,
+    preferences_load,
+} = use_preferences(props.launch);
+
 const {
     panel_active,
     panels_available,
     panel_data,
+    panel_error,
     title_panel,
     component_active,
     panel_data_fetch,
@@ -63,6 +79,8 @@ function save() {
 }
 
 function strip_return() {
+    if (panel_active.value === null) throw new Error('only an open panel returns to the strip');
+
     panel_active.value = null;
     panel_data.value = null;
     state.value = 'strip';
@@ -70,6 +88,8 @@ function strip_return() {
 }
 
 function overlay_close() {
+    if (panel_active.value === null) throw new Error('only an open panel can be closed');
+
     state.value = 'strip';
     panel_active.value = null;
     panel_data.value = null;
@@ -77,6 +97,8 @@ function overlay_close() {
 }
 
 function strip_close() {
+    if (state.value === 'collapsed') throw new Error('a collapsed toolbar has no strip to close');
+
     state.value = 'collapsed';
     panel_active.value = null;
     panel_data.value = null;
@@ -84,6 +106,10 @@ function strip_close() {
 }
 
 function strip_open() {
+    if (state.value !== 'collapsed') {
+        throw new Error('the strip opens only from the collapsed tab, not ' + state.value);
+    }
+
     state.value = 'strip';
     save();
 }
@@ -92,6 +118,7 @@ function panel_open(panel_id: string) {
     state.value = 'panel';
     panel_active.value = panel_id;
     panel_data.value = null;
+    panel_error.value = null;
     panel_data_fetch(panel_id);
     save();
 }
@@ -114,12 +141,16 @@ function panel_refresh() {
         panel_data_fetch(panel_active.value);
     }
 
-    panel_metadata_fetch();
+    void panel_metadata_fetch();
 }
 
 function panel_enabled_toggle(panel_id: string) {
-    const currently_disabled = panels_disabled.value[panel_id];
+    if (toggles_pending.has(panel_id)) return;
+
+    const currently_disabled = panels_disabled.value[panel_id] === true;
     const action = currently_disabled ? 'enable' : 'disable';
+
+    toggles_pending.add(panel_id);
 
     json_fetch('/__kaleidoscope__/panels/' + panel_id + '/' + action + '/').then(function() {
         panels_disabled.value = { ...panels_disabled.value, [panel_id]: !currently_disabled };
@@ -129,7 +160,11 @@ function panel_enabled_toggle(panel_id: string) {
         }
 
         save();
-        panel_metadata_fetch();
+    }).catch(function() {
+        return undefined;
+    }).finally(function() {
+        toggles_pending.delete(panel_id);
+        void panel_metadata_fetch().then(save);
     });
 }
 
@@ -139,11 +174,15 @@ function side_swap() {
 }
 
 function refresh_debounced() {
-    if (timer_fetch) clearTimeout(timer_fetch);
+    if (!mounted) return;
+
+    if (timer_fetch) {
+        clearTimeout(timer_fetch);
+    }
 
     timer_fetch = setTimeout(function() {
         timer_fetch = null;
-        panel_metadata_fetch();
+        void panel_metadata_fetch();
 
         if (panel_active.value) {
             panel_data_fetch(panel_active.value);
@@ -152,7 +191,9 @@ function refresh_debounced() {
 }
 
 onMounted(function() {
-    preferences_load(panel_registry, function(restored_state, panel_id) {
+    mounted = true;
+
+    const loaded = preferences_load(panel_registry, function(restored_state, panel_id) {
         state.value = restored_state;
 
         if (panel_id) {
@@ -161,11 +202,13 @@ onMounted(function() {
         }
     });
 
-    panel_metadata_fetch();
+    void loaded.then(panel_metadata_fetch);
     interceptors_cleanup = use_interceptors(refresh_debounced);
 });
 
 onUnmounted(function() {
+    mounted = false;
+
     if (timer_fetch) {
         clearTimeout(timer_fetch);
         timer_fetch = null;
@@ -191,7 +234,7 @@ onUnmounted(function() {
 
         <div
             v-if="state !== 'collapsed'"
-            class="fixed inset-0 z-[999999] flex"
+            class="fixed inset-0 z-999999 flex"
             :class="{
                 'left-auto sm:left-auto': state === 'strip' && !is_mobile && side === 'right',
                 'right-auto sm:right-auto': state === 'strip' && !is_mobile && side === 'left',
@@ -202,6 +245,7 @@ onUnmounted(function() {
         >
             <div
                 v-if="panel_active && !(is_mobile && state === 'strip')"
+                data-ks="panel"
                 class="flex flex-col flex-1 min-w-0 bg-ks-panel border-ks"
                 :class="side === 'right' ? 'border-l' : 'border-r'"
             >
@@ -209,18 +253,21 @@ onUnmounted(function() {
                     <div class="flex items-center gap-3 min-w-0">
                         <button
                             v-if="is_mobile"
+                            type="button"
+                            data-ks="panel-back"
+                            aria-label="Back to the panel list"
                             class="shrink-0 text-ks-muted hover:text-ks"
                             @click="strip_return"
                         >
                             <ArrowLeft :size="18" />
                         </button>
-                        <span class="font-semibold text-sm truncate">{{ title_panel }}</span>
+                        <span data-ks="panel-title" class="font-semibold text-sm truncate">{{ title_panel }}</span>
                         <CopyButton
                             v-if="panel_data"
                             :value="panel_data"
                         />
                     </div>
-                    <button class="shrink-0 text-ks-muted hover:text-ks ml-3" @click="overlay_close">
+                    <button type="button" data-ks="panel-close" aria-label="Close the panel" class="shrink-0 text-ks-muted hover:text-ks ml-3" @click="overlay_close">
                         <X :size="18" />
                     </button>
                 </div>
@@ -231,6 +278,9 @@ onUnmounted(function() {
                         :data="panel_data"
                         @refresh="panel_refresh"
                     />
+                    <div v-else-if="panel_error" class="py-10 text-center text-red-400 italic" data-ks-panel-error>
+                        The panel failed to load: {{ panel_error }}
+                    </div>
                     <div v-else class="py-10 text-center text-ks-faint italic">Loading...</div>
                 </div>
             </div>

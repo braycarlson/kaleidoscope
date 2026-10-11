@@ -1,0 +1,1306 @@
+{
+    "panel_list": {
+        "additionalProperties": false,
+        "properties": {
+            "panels": {
+                "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "id": {
+                            "type": "string"
+                        },
+                        "isolate": {
+                            "type": "boolean"
+                        },
+                        "summary": {
+                            "type": "string"
+                        },
+                        "title": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "enabled",
+                        "id",
+                        "isolate",
+                        "summary",
+                        "title"
+                    ],
+                    "type": "object"
+                },
+                "type": "array"
+            }
+        },
+        "required": [
+            "panels"
+        ],
+        "type": "object"
+    },
+    "panels": {
+        "cache": {
+            "additionalProperties": false,
+            "properties": {
+                "calls": {
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "alias": {
+                                "type": "string"
+                            },
+                            "args": {
+                                "type": "string"
+                            },
+                            "duration_ms": {
+                                "type": "number"
+                            },
+                            "hit": {
+                                "type": "boolean"
+                            },
+                            "method": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "alias",
+                            "args",
+                            "duration_ms",
+                            "hit",
+                            "method"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "hits": {
+                    "type": "integer"
+                },
+                "misses": {
+                    "type": "integer"
+                },
+                "total_time": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "calls",
+                "count",
+                "hits",
+                "misses",
+                "total_time"
+            ],
+            "type": "object"
+        },
+        "line_profiling": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "error": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "duration_ms": {
+                            "type": "number"
+                        },
+                        "error": {
+                            "type": "string"
+                        },
+                        "function_count": {
+                            "type": "integer"
+                        },
+                        "functions": {
+                            "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                    "filename": {
+                                        "type": "string"
+                                    },
+                                    "full_path": {
+                                        "type": "string"
+                                    },
+                                    "func_name": {
+                                        "type": "string"
+                                    },
+                                    "lines": {
+                                        "items": {
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "hits": {
+                                                    "type": "integer"
+                                                },
+                                                "lineno": {
+                                                    "type": "integer"
+                                                },
+                                                "pct": {
+                                                    "type": "number"
+                                                },
+                                                "per_hit_ms": {
+                                                    "type": "number"
+                                                },
+                                                "source": {
+                                                    "type": "string"
+                                                },
+                                                "time_ms": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "required": [
+                                                "hits",
+                                                "lineno",
+                                                "pct",
+                                                "per_hit_ms",
+                                                "source",
+                                                "time_ms"
+                                            ],
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "start_lineno": {
+                                        "type": "integer"
+                                    },
+                                    "total_time_ms": {
+                                        "type": "number"
+                                    }
+                                },
+                                "required": [
+                                    "filename",
+                                    "full_path",
+                                    "func_name",
+                                    "lines",
+                                    "start_lineno",
+                                    "total_time_ms"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "has_data": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "duration_ms",
+                        "function_count",
+                        "functions",
+                        "has_data"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "memory": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "error": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "diff": {
+                            "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "count": {
+                                        "type": "integer"
+                                    },
+                                    "size": {
+                                        "type": "integer"
+                                    },
+                                    "size_display": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "category",
+                                    "count",
+                                    "size",
+                                    "size_display",
+                                    "type"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "error": {
+                            "type": "string"
+                        },
+                        "total_objects": {
+                            "type": "integer"
+                        },
+                        "total_size": {
+                            "type": "integer"
+                        },
+                        "total_size_display": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "diff",
+                        "total_objects",
+                        "total_size",
+                        "total_size_display"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "profiling": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "error": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "duration_ms": {
+                            "type": "number"
+                        },
+                        "error": {
+                            "type": "string"
+                        },
+                        "has_data": {
+                            "type": "boolean"
+                        },
+                        "html": {
+                            "type": "string"
+                        },
+                        "text": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "duration_ms",
+                        "has_data",
+                        "html",
+                        "text"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "queries": {
+            "additionalProperties": false,
+            "properties": {
+                "duplicates": {
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                },
+                "requests": {
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "duration": {
+                                "type": "number"
+                            },
+                            "is_ajax": {
+                                "type": "boolean"
+                            },
+                            "method": {
+                                "type": "string"
+                            },
+                            "path": {
+                                "type": "string"
+                            },
+                            "queries": {
+                                "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "alias": {
+                                            "type": "string"
+                                        },
+                                        "many": {
+                                            "type": "boolean"
+                                        },
+                                        "params": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "raw_sql": {
+                                            "type": "string"
+                                        },
+                                        "rows": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ]
+                                        },
+                                        "sql": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "items": {
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                    "file": {
+                                                        "type": "string"
+                                                    },
+                                                    "function": {
+                                                        "type": "string"
+                                                    },
+                                                    "line": {
+                                                        "type": "integer"
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "file",
+                                                    "function",
+                                                    "line",
+                                                    "text"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "templates": {
+                                            "items": {
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                    "line": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "line",
+                                                    "name",
+                                                    "text"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "time": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "required": [
+                                        "alias",
+                                        "many",
+                                        "params",
+                                        "raw_sql",
+                                        "rows",
+                                        "sql",
+                                        "stack",
+                                        "templates",
+                                        "time"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            "query_count": {
+                                "type": "integer"
+                            },
+                            "query_time": {
+                                "type": "number"
+                            },
+                            "request_id": {
+                                "type": "string"
+                            },
+                            "status_code": {
+                                "type": "integer"
+                            },
+                            "timestamp": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "duration",
+                            "is_ajax",
+                            "method",
+                            "path",
+                            "queries",
+                            "query_count",
+                            "query_time",
+                            "request_id",
+                            "status_code",
+                            "timestamp"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "similar": {
+                    "additionalProperties": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "example": {
+                                "type": "string"
+                            },
+                            "total_time": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "example",
+                            "total_time"
+                        ],
+                        "type": "object"
+                    },
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                },
+                "summary": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "request_count": {
+                            "type": "integer"
+                        },
+                        "total_queries": {
+                            "type": "integer"
+                        },
+                        "total_query_time": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "request_count",
+                        "total_queries",
+                        "total_query_time"
+                    ],
+                    "type": "object"
+                },
+                "track_ajax": {
+                    "type": "boolean"
+                },
+                "track_page": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "duplicates",
+                "requests",
+                "similar",
+                "summary",
+                "track_ajax",
+                "track_page"
+            ],
+            "type": "object"
+        },
+        "request": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "content_type": {
+                            "type": "string"
+                        },
+                        "cookies": {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "properties": {},
+                            "required": [],
+                            "type": "object"
+                        },
+                        "get": {
+                            "additionalProperties": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            "properties": {},
+                            "required": [],
+                            "type": "object"
+                        },
+                        "headers": {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "properties": {},
+                            "required": [],
+                            "type": "object"
+                        },
+                        "method": {
+                            "type": "string"
+                        },
+                        "path": {
+                            "type": "string"
+                        },
+                        "permissions": {
+                            "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                    "count": {
+                                        "type": "integer"
+                                    },
+                                    "kind": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "result": {
+                                        "type": "boolean"
+                                    },
+                                    "superuser": {
+                                        "type": "boolean"
+                                    },
+                                    "target": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "count",
+                                    "kind",
+                                    "name",
+                                    "result",
+                                    "superuser",
+                                    "target"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "post": {
+                            "additionalProperties": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            "properties": {},
+                            "required": [],
+                            "type": "object"
+                        },
+                        "response_headers": {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "properties": {},
+                            "required": [],
+                            "type": "object"
+                        },
+                        "session": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "accessed": {
+                                    "type": "boolean"
+                                },
+                                "backend": {
+                                    "type": "string"
+                                },
+                                "expire_at_browser_close": {
+                                    "type": "boolean"
+                                },
+                                "expiry_age": {
+                                    "type": "integer"
+                                },
+                                "items": {
+                                    "additionalProperties": {},
+                                    "properties": {},
+                                    "required": [],
+                                    "type": "object"
+                                },
+                                "modified": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "accessed",
+                                "backend",
+                                "expire_at_browser_close",
+                                "expiry_age",
+                                "items",
+                                "modified"
+                            ],
+                            "type": [
+                                "object",
+                                "null"
+                            ]
+                        },
+                        "status_code": {
+                            "type": "integer"
+                        },
+                        "user": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "active": {
+                                    "type": "boolean"
+                                },
+                                "authenticated": {
+                                    "type": "boolean"
+                                },
+                                "id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "staff": {
+                                    "type": "boolean"
+                                },
+                                "superuser": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "active",
+                                "authenticated",
+                                "id",
+                                "name",
+                                "staff",
+                                "superuser"
+                            ],
+                            "type": [
+                                "object",
+                                "null"
+                            ]
+                        },
+                        "view": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "args": {
+                                    "items": {},
+                                    "type": "array"
+                                },
+                                "func": {
+                                    "type": "string"
+                                },
+                                "kwargs": {
+                                    "additionalProperties": {},
+                                    "properties": {},
+                                    "required": [],
+                                    "type": "object"
+                                },
+                                "route": {
+                                    "type": "string"
+                                },
+                                "url_name": {
+                                    "type": "string"
+                                },
+                                "view_name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "args",
+                                "func",
+                                "kwargs",
+                                "route",
+                                "url_name",
+                                "view_name"
+                            ],
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "content_type",
+                        "cookies",
+                        "get",
+                        "headers",
+                        "method",
+                        "path",
+                        "permissions",
+                        "post",
+                        "response_headers",
+                        "session",
+                        "status_code",
+                        "user"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "settings": {
+            "additionalProperties": false,
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "settings": {
+                    "additionalProperties": {},
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "count",
+                "settings"
+            ],
+            "type": "object"
+        },
+        "signals": {
+            "additionalProperties": false,
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "send_count": {
+                    "type": "integer"
+                },
+                "send_time": {
+                    "type": "number"
+                },
+                "sends": {
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "duration_ms": {
+                                "type": "number"
+                            },
+                            "errors": {
+                                "type": "integer"
+                            },
+                            "module": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "receivers": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            "sender": {
+                                "type": "string"
+                            },
+                            "site": {
+                                "additionalProperties": false,
+                                "properties": {
+                                    "file": {
+                                        "type": "string"
+                                    },
+                                    "function": {
+                                        "type": "string"
+                                    },
+                                    "line": {
+                                        "type": "integer"
+                                    },
+                                    "text": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "function",
+                                    "line",
+                                    "text"
+                                ],
+                                "type": [
+                                    "object",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "duration_ms",
+                            "errors",
+                            "module",
+                            "name",
+                            "receivers",
+                            "sender",
+                            "site"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "signals": {
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "module": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "receiver_count": {
+                                "type": "integer"
+                            },
+                            "receivers": {
+                                "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "module": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "module",
+                                        "name",
+                                        "path"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "module",
+                            "name",
+                            "receiver_count",
+                            "receivers"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "total_receivers": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "count",
+                "send_count",
+                "send_time",
+                "sends",
+                "signals",
+                "total_receivers"
+            ],
+            "type": "object"
+        },
+        "staticfiles": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "all_count": {
+                            "type": "integer"
+                        },
+                        "all_files": {
+                            "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                    "finder": {
+                                        "type": "string"
+                                    },
+                                    "full_path": {
+                                        "type": "string"
+                                    },
+                                    "path": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "finder",
+                                    "full_path",
+                                    "path"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "used_count": {
+                            "type": "integer"
+                        },
+                        "used_files": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "all_count",
+                        "all_files",
+                        "used_count",
+                        "used_files"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "templates": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "count": {
+                            "type": "integer"
+                        },
+                        "templates": {
+                            "items": {
+                                "additionalProperties": false,
+                                "properties": {
+                                    "context_keys": {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "duration_ms": {
+                                        "type": "number"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "context_keys",
+                                    "duration_ms",
+                                    "name"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "total_time": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "count",
+                        "templates",
+                        "total_time"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "timer": {
+            "variants": [
+                {
+                    "additionalProperties": false,
+                    "properties": {},
+                    "required": [],
+                    "type": "object"
+                },
+                {
+                    "additionalProperties": false,
+                    "properties": {
+                        "asgi": {
+                            "type": "boolean"
+                        },
+                        "content_type": {
+                            "type": "string"
+                        },
+                        "method": {
+                            "type": "string"
+                        },
+                        "path": {
+                            "type": "string"
+                        },
+                        "status_code": {
+                            "type": "integer"
+                        },
+                        "total_ms": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "asgi",
+                        "content_type",
+                        "method",
+                        "path",
+                        "status_code",
+                        "total_ms"
+                    ],
+                    "type": "object"
+                }
+            ]
+        },
+        "versions": {
+            "additionalProperties": false,
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "django": {
+                    "type": "string"
+                },
+                "packages": {
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "description": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "version": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "description",
+                            "name",
+                            "version"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "python": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "count",
+                "django",
+                "packages",
+                "python"
+            ],
+            "type": "object"
+        }
+    },
+    "query_explain": {
+        "variants": [
+            {
+                "additionalProperties": false,
+                "properties": {
+                    "command": {
+                        "type": "string"
+                    },
+                    "plan": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "command",
+                    "plan"
+                ],
+                "type": "object"
+            },
+            {
+                "additionalProperties": false,
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "error"
+                ],
+                "type": "object"
+            }
+        ]
+    },
+    "template_value": {
+        "variants": [
+            {
+                "additionalProperties": false,
+                "properties": {
+                    "value": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "attributes": {
+                                "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "has_children": {
+                                            "type": "boolean"
+                                        },
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "preview": {
+                                            "type": "string"
+                                        },
+                                        "step": {
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "index": {
+                                                    "type": "integer"
+                                                },
+                                                "kind": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "kind"
+                                            ],
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": [
+                                        "has_children",
+                                        "label",
+                                        "preview",
+                                        "step"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            "class_name": {
+                                "type": "string"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "has_children": {
+                                            "type": "boolean"
+                                        },
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "preview": {
+                                            "type": "string"
+                                        },
+                                        "step": {
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "index": {
+                                                    "type": "integer"
+                                                },
+                                                "kind": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "kind"
+                                            ],
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": [
+                                        "has_children",
+                                        "label",
+                                        "preview",
+                                        "step"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            "model": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "pk": {
+                                "type": "string"
+                            },
+                            "repr": {
+                                "type": "string"
+                            },
+                            "size": {
+                                "type": "integer"
+                            },
+                            "truncated": {
+                                "type": "integer"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "type": [
+                                    "string",
+                                    "boolean"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "value"
+                ],
+                "type": "object"
+            },
+            {
+                "additionalProperties": false,
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "error"
+                ],
+                "type": "object"
+            }
+        ]
+    }
+}

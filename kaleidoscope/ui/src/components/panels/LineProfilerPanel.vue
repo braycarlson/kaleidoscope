@@ -22,10 +22,10 @@ interface FunctionEntry {
 }
 
 interface LineProfilerPanelData {
-    duration_ms: number;
+    duration_ms?: number;
     error?: string;
     function_count?: number;
-    functions: FunctionEntry[];
+    functions?: FunctionEntry[];
     has_data?: boolean;
 }
 
@@ -34,20 +34,26 @@ const props = defineProps<{
 }>();
 
 const functions = computed(function(): FunctionEntry[] {
-    return props.data.functions || [];
+    return props.data.functions ?? [];
 });
 
 const profile_copy = computed(function(): string {
     return functions.value.map(function(fn) {
         const header = fn.func_name + ' (' + fn.filename + ':' + fn.start_lineno + ') ' + fn.total_time_ms + ' ms';
+
         const lines = fn.lines.map(function(line) {
             return line.lineno + '\t' + line.hits + '\t' + line.time_ms + 'ms\t' + line.pct + '%\t' + line.source;
         }).join('\n');
+
         return header + '\n' + lines;
     }).join('\n\n');
 });
 
 function class_row(percent: number): string {
+    if (!Number.isFinite(percent)) {
+        throw new RangeError('a line share must be a finite number: ' + percent);
+    }
+
     if (percent >= 40) return 'bg-ks-row-critical';
     if (percent >= 20) return 'bg-ks-row-high';
     if (percent >= 10) return 'bg-ks-row-medium';
@@ -64,7 +70,7 @@ function class_time(percent: number): string {
 
 const stats = computed(function() {
     const items: { label: string; value: string | number }[] = [
-        { label: 'Duration', value: (props.data.duration_ms || 0) + ' ms' },
+        { label: 'Duration', value: (props.data.duration_ms ?? 0) + ' ms' },
     ];
 
     if (props.data.function_count) {

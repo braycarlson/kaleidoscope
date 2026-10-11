@@ -4,7 +4,6 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 CACHES = {
@@ -22,7 +21,6 @@ DATABASES = {
 }
 
 DEBUG = True
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 INSTALLED_APPS = [
@@ -37,7 +35,6 @@ INSTALLED_APPS = [
 ]
 
 INTERNAL_IPS = ['127.0.0.1']
-
 LANGUAGE_CODE = 'en-us'
 
 MIDDLEWARE = [
@@ -52,11 +49,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'demo.urls'
-
 SECRET_KEY = 'kaleidoscope-example-insecure-secret-key'
-
 STATIC_URL = 'static/'
-
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 TEMPLATES = [
@@ -75,11 +69,7 @@ TEMPLATES = [
 ]
 
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 WSGI_APPLICATION = 'demo.wsgi.application'
-
 X_FRAME_OPTIONS = 'SAMEORIGIN'

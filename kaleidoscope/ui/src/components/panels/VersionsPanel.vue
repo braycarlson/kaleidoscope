@@ -4,7 +4,7 @@ import CollapsibleSection from '../CollapsibleSection.vue';
 import DataTable from '../DataTable.vue';
 import FilterInput from '../FilterInput.vue';
 import PanelHeader from '../PanelHeader.vue';
-import type { ColumnDef } from '@tanstack/vue-table';
+import type { TableColumn } from '../../services/table';
 
 interface PackageEntry {
     description: string;
@@ -27,7 +27,7 @@ const text_filter = ref('');
 
 const packages_filtered = computed(function(): PackageEntry[] {
     const search = text_filter.value.toLowerCase();
-    const packages: PackageEntry[] = props.data.packages || [];
+    const packages = props.data.packages;
 
     if (!search) return packages;
 
@@ -36,16 +36,16 @@ const packages_filtered = computed(function(): PackageEntry[] {
     });
 });
 
-const columns: ColumnDef<PackageEntry, unknown>[] = [
+const columns: TableColumn<PackageEntry>[] = [
     {
         accessorKey: 'name',
         header: 'Package',
-        meta: { headerClass: '!w-48 sm:!w-72', cellClass: 'w-48 sm:w-72 font-semibold' },
+        meta: { headerClass: 'w-48! sm:w-72!', cellClass: 'w-48 sm:w-72 font-semibold' },
     },
     {
         accessorKey: 'version',
         header: 'Version',
-        meta: { headerClass: '!w-24 sm:!w-32', cellClass: 'font-mono opacity-60' },
+        meta: { headerClass: 'w-24! sm:w-32!', cellClass: 'font-mono opacity-60' },
     },
     {
         accessorKey: 'description',
@@ -53,6 +53,11 @@ const columns: ColumnDef<PackageEntry, unknown>[] = [
         meta: { cellClass: 'opacity-40 overflow-hidden text-ellipsis whitespace-nowrap' },
         cell: function(info) {
             const value = info.getValue() as string;
+
+            if (typeof value !== 'string') {
+                throw new TypeError('a package description must be text: ' + String(value));
+            }
+
             return h('span', { title: value }, value);
         },
     },

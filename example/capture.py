@@ -6,33 +6,44 @@ import subprocess
 import sys
 import time
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing_extensions import TYPE_CHECKING
 
 from playwright.sync_api import sync_playwright
 
 if TYPE_CHECKING:
+    from typing_extensions import Callable
+
     from playwright.sync_api import Page
 
 
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE_PATH = BASE_DIR / 'database.sqlite3'
 OUTPUT_DIR = BASE_DIR / 'screenshot'
-
 HOST = '127.0.0.1'
 PORT = 8765
 BASE_URL = f'http://{HOST}:{PORT}'
-
 ACTION_MS = 1200
 DEVICE_SCALE_FACTOR = 2
 POLL_SECONDS = 0.2
 SERVER_TIMEOUT_SECONDS = 30
 SETTLE_MS = 2000
 SETTLE_PROFILE_MS = 7000
-
-VIEWPORT = {'width': 1920, 'height': 1080}
-
+VIEWPORT_HEIGHT = 1080
+VIEWPORT_WIDTH = 1920
 ISOLATED_PANELS = ('line_profiling', 'memory', 'profiling')
+
+
+@dataclass(frozen=True, slots=True)
+class Shot:
+    name: str
+    path: str
+    state: str
+    action: Callable[[Page], None] | None = None
+    isolate: str | None = None
+    panel: str | None = None
+    settle_ms: int = SETTLE_MS
 
 
 def _ajax_fired(page: Page) -> None:
@@ -50,15 +61,19 @@ def _panel_enabled(page: Page, panel_id: str) -> None:
 
 
 def _preferences_applied(page: Page, state: str, panel_id: str | None) -> None:
+    launch = page.evaluate("document.getElementById('ks-app').dataset.launch")
+
     preferences = {
         'active_panel': panel_id,
         'disabled': {},
+        'launch': launch,
         'order': [],
         'side': 'right',
         'state': state
     }
 
     payload = json.dumps(preferences)
+
     page.evaluate('value => localStorage.setItem("kaleidoscope_preferences", value)', payload)
 
 
@@ -68,9 +83,11 @@ def _request_expanded(page: Page) -> None:
 
 def _server_running() -> bool:
     connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     connection.settimeout(POLL_SECONDS)
 
     code = connection.connect_ex((HOST, PORT))
+
     connection.close()
 
     return code == 0
@@ -100,113 +117,40 @@ def _server_started() -> subprocess.Popen:
     raise RuntimeError(message)
 
 
-def _shot_taken(page: Page, shot: dict) -> None:
-    isolate = shot.get('isolate')
+def _shot_selected(shot: Shot, patterns: list[str]) -> bool:
+    if not patterns:
+        return True
 
-    if isolate is not None:
-        _panel_enabled(page, isolate)
+    return any(pattern in shot.name for pattern in patterns)
 
-    page.goto(BASE_URL + shot['path'], wait_until='load')
-    _preferences_applied(page, shot['state'], shot.get('panel'))
 
-    page.goto(BASE_URL + shot['path'], wait_until='load')
-    page.wait_for_timeout(shot.get('settle', SETTLE_MS))
+def _shot_taken(page: Page, shot: Shot) -> None:
+    if shot.isolate is not None:
+        _panel_enabled(page, shot.isolate)
 
-    action = shot.get('action')
+    page.goto(BASE_URL + shot.path, wait_until='load')
+    _preferences_applied(page, shot.state, shot.panel)
 
-    if action is not None:
-        action(page)
+    page.goto(BASE_URL + shot.path, wait_until='load')
+    page.wait_for_timeout(shot.settle_ms)
+
+    if shot.action is not None:
+        shot.action(page)
         page.wait_for_timeout(ACTION_MS)
 
-    page.screenshot(path=str(OUTPUT_DIR / shot['name']))
+    page.screenshot(path=str(OUTPUT_DIR / shot.name))
 
-    if isolate is not None:
-        _panel_disabled(page, isolate)
+    if shot.isolate is not None:
+        _panel_disabled(page, shot.isolate)
 
-    print(shot['name'])
-
-
-def _shots_built() -> list[dict]:
-    return [
-        {'name': '01-dashboard.png', 'path': '/', 'state': 'collapsed'},
-        {'name': '02-panel-strip.png', 'path': '/books/', 'state': 'strip'},
-        {
-            'action': _request_expanded,
-            'name': '03-queries-n-plus-one.png',
-            'panel': 'queries',
-            'path': '/books/',
-            'state': 'panel'
-        },
-        {
-            'action': _similar_revealed,
-            'name': '04-similar-queries.png',
-            'panel': 'queries',
-            'path': '/books/',
-            'state': 'panel'
-        },
-        {
-            'action': _request_expanded,
-            'name': '05-queries-optimized.png',
-            'panel': 'queries',
-            'path': '/books/optimized/',
-            'state': 'panel'
-        },
-        {
-            'action': _request_expanded,
-            'name': '06-queries-orders.png',
-            'panel': 'queries',
-            'path': '/orders/',
-            'state': 'panel'
-        },
-        {
-            'isolate': 'profiling',
-            'name': '07-profiling.png',
-            'panel': 'profiling',
-            'path': '/reports/',
-            'settle': SETTLE_PROFILE_MS,
-            'state': 'panel'
-        },
-        {
-            'isolate': 'line_profiling',
-            'name': '08-line-profiler.png',
-            'panel': 'line_profiling',
-            'path': '/reports/',
-            'state': 'panel'
-        },
-        {
-            'isolate': 'memory',
-            'name': '09-memory.png',
-            'panel': 'memory',
-            'path': '/memory/',
-            'state': 'panel'
-        },
-        {'name': '10-templates.png', 'panel': 'templates', 'path': '/books/', 'state': 'panel'},
-        {'name': '11-cache.png', 'panel': 'cache', 'path': '/cache/', 'state': 'panel'},
-        {'name': '12-signals.png', 'panel': 'signals', 'path': '/orders/', 'state': 'panel'},
-        {'name': '13-static-files.png', 'panel': 'staticfiles', 'path': '/', 'state': 'panel'},
-        {'name': '14-settings.png', 'panel': 'settings', 'path': '/', 'state': 'panel'},
-        {
-            'name': '15-request.png',
-            'panel': 'request',
-            'path': '/search/?q=lantern',
-            'state': 'panel'
-        },
-        {'name': '16-timer.png', 'panel': 'timer', 'path': '/books/', 'state': 'panel'},
-        {'name': '17-versions.png', 'panel': 'versions', 'path': '/', 'state': 'panel'},
-        {
-            'action': _ajax_fired,
-            'name': '18-queries-ajax.png',
-            'panel': 'queries',
-            'path': '/',
-            'state': 'panel'
-        }
-    ]
+    print(shot.name)
 
 
-def _shots_captured(shots: list[dict]) -> None:
+def _shots_captured(shots: list[Shot]) -> None:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
-        context = browser.new_context(viewport=VIEWPORT, device_scale_factor=DEVICE_SCALE_FACTOR)
+        viewport = {'width': VIEWPORT_WIDTH, 'height': VIEWPORT_HEIGHT}
+        context = browser.new_context(viewport=viewport, device_scale_factor=DEVICE_SCALE_FACTOR)
         page = context.new_page()
 
         page.goto(BASE_URL + '/', wait_until='load')
@@ -226,19 +170,94 @@ def _similar_revealed(page: Page) -> None:
     page.locator('div.cursor-pointer.select-none').first.click()
 
 
+SHOTS = (
+    Shot(name='01-dashboard.png', path='/', state='collapsed'),
+    Shot(name='02-panel-strip.png', path='/books/', state='strip'),
+    Shot(
+        action=_request_expanded,
+        name='03-queries-n-plus-one.png',
+        panel='queries',
+        path='/books/',
+        state='panel'
+    ),
+    Shot(
+        action=_similar_revealed,
+        name='04-similar-queries.png',
+        panel='queries',
+        path='/books/',
+        state='panel'
+    ),
+    Shot(
+        action=_request_expanded,
+        name='05-queries-optimized.png',
+        panel='queries',
+        path='/books/optimized/',
+        state='panel'
+    ),
+    Shot(
+        action=_request_expanded,
+        name='06-queries-orders.png',
+        panel='queries',
+        path='/orders/',
+        state='panel'
+    ),
+    Shot(
+        isolate='profiling',
+        name='07-profiling.png',
+        panel='profiling',
+        path='/reports/',
+        settle_ms=SETTLE_PROFILE_MS,
+        state='panel'
+    ),
+    Shot(
+        isolate='line_profiling',
+        name='08-line-profiler.png',
+        panel='line_profiling',
+        path='/reports/',
+        state='panel'
+    ),
+    Shot(
+        isolate='memory',
+        name='09-memory.png',
+        panel='memory',
+        path='/memory/',
+        state='panel'
+    ),
+    Shot(name='10-templates.png', panel='templates', path='/books/', state='panel'),
+    Shot(name='11-cache.png', panel='cache', path='/cache/', state='panel'),
+    Shot(name='12-signals.png', panel='signals', path='/orders/', state='panel'),
+    Shot(name='13-static-files.png', panel='staticfiles', path='/', state='panel'),
+    Shot(name='14-settings.png', panel='settings', path='/', state='panel'),
+    Shot(
+        name='15-request.png',
+        panel='request',
+        path='/search/?q=lantern',
+        state='panel'
+    ),
+    Shot(name='16-timer.png', panel='timer', path='/books/', state='panel'),
+    Shot(name='17-versions.png', panel='versions', path='/', state='panel'),
+    Shot(
+        action=_ajax_fired,
+        name='18-queries-ajax.png',
+        panel='queries',
+        path='/',
+        state='panel'
+    )
+)
+
+
 def main() -> int:
     if not DATABASE_PATH.is_file():
         print('no database found, run: just reset')
+
         return 1
 
     patterns = sys.argv[1:]
-    shots = [
-        shot for shot in _shots_built()
-        if not patterns or any(pattern in shot['name'] for pattern in patterns)
-    ]
+    shots = [shot for shot in SHOTS if _shot_selected(shot, patterns)]
 
     if not shots:
         print(f'no screenshot matched {patterns}')
+
         return 1
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

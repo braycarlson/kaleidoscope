@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Info, Moon, Sun, X, GripVertical, PanelLeft, PanelLeftClose, PanelRight, PanelRightClose } from 'lucide-vue-next';
+import {
+    GripVertical,
+    Info,
+    Moon,
+    PanelLeft,
+    PanelLeftClose,
+    PanelRight,
+    PanelRightClose,
+    Sun,
+    X,
+} from 'lucide-vue-next';
 import type { KaleidoscopeSide, PanelMeta } from '../types';
 import type { Theme } from '../composables/use_theme';
 
@@ -43,8 +53,9 @@ const panels_ordered = computed(function() {
     });
 
     return props.panels.slice().sort(function(a, b) {
-        const index_a = order_map[a.id] !== undefined ? order_map[a.id] : 999;
-        const index_b = order_map[b.id] !== undefined ? order_map[b.id] : 999;
+        const index_a = order_map[a.id] ?? 999;
+        const index_b = order_map[b.id] ?? 999;
+
         return index_a - index_b;
     });
 });
@@ -54,6 +65,16 @@ const is_isolated = computed(function() {
         return panel.isolate && is_enabled(panel.id);
     });
 });
+
+function index_validate(index: number) {
+    if (!Number.isInteger(index)) throw new TypeError('a panel index must be an integer: ' + index);
+    if (index < 0) throw new RangeError('a panel index must not be negative: ' + index);
+
+    if (index >= panels_ordered.value.length) {
+        const count = panels_ordered.value.length;
+        throw new RangeError('a panel index must be below ' + count + ': ' + index);
+    }
+}
 
 function is_enabled(panel_id: string): boolean {
     return !props.panels_disabled[panel_id];
@@ -70,22 +91,32 @@ function on_click(panel: PanelMeta) {
 }
 
 function on_drag_start(index: number, event: DragEvent) {
+    index_validate(index);
+
     index_drag.value = index;
+
     if (event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'move';
     }
 }
 
 function on_drag_over(index: number, event: DragEvent) {
+    index_validate(index);
+
     event.preventDefault();
     index_drag_over.value = index;
 }
 
 function on_drop(index: number) {
+    index_validate(index);
+
     if (index_drag.value === null || index_drag.value === index) return;
 
     const ids = panels_ordered.value.map(function(panel) { return panel.id; });
-    const moved = ids.splice(index_drag.value, 1)[0];
+    const [moved] = ids.splice(index_drag.value, 1);
+
+    if (moved === undefined) return;
+
     ids.splice(index, 0, moved);
     emit('reorder', ids);
     index_drag.value = null;
@@ -100,6 +131,7 @@ function on_drag_end() {
 
 <template>
     <div
+        data-ks="strip"
         class="flex flex-col bg-ks-strip backdrop-blur-md shrink-0"
         :class="[
             is_mobile ? 'w-full' : 'w-64 min-w-[256px]',
@@ -109,30 +141,36 @@ function on_drag_end() {
         <div
             class="flex items-center px-3.5 py-3 shrink-0 border-b border-ks-tab"
         >
-            <div
+            <button
+                type="button"
+                data-ks="theme"
+                :aria-label="theme === 'dark' ? 'Use the light theme' : 'Use the dark theme'"
                 class="w-8 h-8 -ml-1 shrink-0 flex items-center justify-center cursor-pointer text-ks-strip-icon hover:text-ks-strip-hi transition-colors"
                 @click="emit('theme_toggle')"
             >
                 <Sun v-if="theme === 'dark'" :size="14" />
                 <Moon v-else :size="14" />
-            </div>
+            </button>
             <span class="flex-1 text-center text-[15px] tracking-[0.15em] text-ks-brand cursor-pointer -my-3 py-3" @click="emit('close')">Kaleidoscope</span>
-            <div
+            <button
+                type="button"
+                data-ks="strip-close"
+                aria-label="Collapse the toolbar"
                 class="w-8 h-8 -mr-1 shrink-0 flex items-center justify-center cursor-pointer text-ks-strip-icon hover:text-ks-strip-hi transition-colors"
                 @click="emit('close')"
             >
                 <X :size="14" />
-            </div>
+            </button>
         </div>
 
         <div v-if="is_isolated" class="mx-3 mt-3 relative">
-            <div class="px-3 py-2.5 bg-ks-warn border border-ks-warn rounded text-[11px] text-center leading-relaxed flex items-center justify-center gap-1.5">
+            <div class="px-3 py-2.5 bg-ks-warn border border-ks-warn rounded-sm text-[11px] text-center leading-relaxed flex items-center justify-center gap-1.5">
                 <span class="font-semibold text-orange-400">Isolation Mode</span>
                 <div class="group inline-flex items-center">
                     <Info :size="13" class="text-orange-400/50 group-hover:text-orange-400 cursor-help" />
-                    <div class="absolute top-full left-0 right-0 mt-1 px-3 py-2.5 bg-ks-header border border-ks-tab rounded text-[11px] text-ks-strip leading-relaxed hidden group-hover:block pointer-events-none z-10">
-                        There is at least one enabled panel that is running in isolation mode.
-                        These panel(s) are isolated to measure performance and run exclusively to keep the measurement more accurate. As such, other panels will not record new information.
+                    <div class="absolute top-full left-0 right-0 mt-1 px-3 py-2.5 bg-ks-header border border-ks-tab rounded-sm text-[11px] text-ks-strip leading-relaxed hidden group-hover:block pointer-events-none z-10">
+                        An isolated panel is enabled, so it runs alone and the other panels record nothing new until it is turned off.
+                        This keeps their instrumentation out of its measurement, and enabling another isolated panel turns this one off.
                     </div>
                 </div>
             </div>
@@ -142,6 +180,7 @@ function on_drag_end() {
             <div
                 v-for="(panel, index) in panels_ordered"
                 :key="panel.id"
+                :data-ks-row="panel.id"
                 draggable="true"
                 class="flex items-center gap-1 pr-3 transition-colors"
                 :class="[
@@ -165,6 +204,7 @@ function on_drag_end() {
                 </div>
 
                 <button
+                    :data-ks-panel="panel.id"
                     class="flex flex-col gap-0.5 flex-1 py-2.5 text-left text-sm"
                     :class="[
                         is_mobile ? 'pl-3 sm:pl-0' : '',
@@ -185,7 +225,12 @@ function on_drag_end() {
                     </span>
                 </button>
 
-                <div
+                <button
+                    type="button"
+                    role="switch"
+                    :data-ks-toggle="panel.id"
+                    :aria-checked="is_enabled(panel.id)"
+                    :aria-label="'Enable ' + panel.title"
                     class="relative w-7 h-4 rounded-full transition-colors cursor-pointer shrink-0"
                     :class="is_enabled(panel.id) ? 'bg-purple-600' : 'bg-ks-toggle-off'"
                     @click.stop="emit('toggle', panel.id)"
@@ -194,28 +239,32 @@ function on_drag_end() {
                         class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform"
                         :class="{ 'translate-x-3': is_enabled(panel.id) }"
                     />
-                </div>
+                </button>
             </div>
         </div>
 
         <div class="flex items-center shrink-0 border-t border-ks-tab">
-            <div
+            <button
+                type="button"
+                data-ks="swap"
                 class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-ks-strip-icon hover:text-ks-strip transition-colors"
                 @click="emit('swap')"
             >
                 <PanelLeft v-if="side === 'right'" :size="14" />
                 <PanelRight v-else :size="14" />
                 <span class="text-[12px]">Move</span>
-            </div>
+            </button>
             <div class="w-px h-5 bg-ks-tab" />
-            <div
+            <button
+                type="button"
+                data-ks="collapse"
                 class="flex-1 flex items-center justify-center gap-2 px-3.5 py-3 cursor-pointer text-ks-strip-icon hover:text-ks-strip transition-colors"
                 @click="emit('close')"
             >
                 <PanelLeftClose v-if="side === 'left'" :size="14" />
                 <PanelRightClose v-else :size="14" />
                 <span class="text-[12px]">Collapse</span>
-            </div>
+            </button>
         </div>
     </div>
 </template>
